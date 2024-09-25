@@ -35,7 +35,7 @@ double halfHeight = height / 2d;
 void onLoad() {
     modules.registerButton("Hold Right Click", true);
     modules.registerButton("Spin Bot", false);
-    modules.registerSlider("Prediction Ticks", 3, 0, 10, 1);
+    modules.registerSlider("Prediction", " ticks", 3, 0, 10, 1);
 }
 
 void onPreMotion(PlayerState s) {
@@ -52,7 +52,7 @@ void onPreMotion(PlayerState s) {
     predictionTicks = (int) modules.getSlider(scriptName, "Prediction Ticks") + 1;
 
     boolean manual = modules.getButton(scriptName, "Hold Right Click");
-    boolean doAiming = durability == maxDurability && guns.contains(itemName) && (!manual || (manual && client.keybinds.isMouseDown(1)));
+    boolean doAiming = durability == maxDurability && guns.contains(itemName) && (!manual || (manual && keybinds.isMouseDown(1)));
 
     if (!doAiming) {
         aim = 0;
@@ -96,8 +96,8 @@ void onPreMotion(PlayerState s) {
             client.sendPacketNoEvent(new C08(heldItem, new Vec3(-1, -1, -1), 255, new Vec3(0.0, 0.0, 0.0)));
         }
     } else if (modules.getButton(scriptName, "Spin Bot")) {
-        s.yaw = (float) client.util.randomDouble(-180, 180);
-        s.pitch = (float) client.util.randomDouble(-90, 90);
+        s.yaw = (float) util.randomDouble(-180, 180);
+        s.pitch = (float) util.randomDouble(-90, 90);
     }
 }
 
@@ -113,11 +113,11 @@ boolean onMouse(int button, boolean state) {
 }
 
 void onRenderTick(float partialTicks) {
-    if (target == null || !client.render.isInView(target)) return;
+    if (target == null || !render.isInView(target)) return;
     double scale = partialTicks;
     int size = client.getDisplaySize()[2];
 
-    Vec3 screen = client.render.worldToScreen(aimPoint.x, aimPoint.y, aimPoint.z, size, partialTicks);
+    Vec3 screen = render.worldToScreen(aimPoint.x, aimPoint.y, aimPoint.z, size, partialTicks);
 
     if (screen.z >= 0 && screen.z < 1.0003684d) {
         double crosshairSize = 3;
@@ -126,8 +126,8 @@ void onRenderTick(float partialTicks) {
         double startY = screen.y - crosshairSize;
         double endY = screen.y + crosshairSize;
 
-        client.render.line2D(startX, screen.y, endX, screen.y, 3.0f, targetColor);
-        client.render.line2D(screen.x, startY, screen.x, endY, 3.0f, targetColor);
+        render.line2D(startX, screen.y, endX, screen.y, 3.0f, targetColor);
+        render.line2D(screen.x, startY, screen.x, endY, 3.0f, targetColor);
     }
 }
 
@@ -155,7 +155,7 @@ List<Entity> getClosestEntities(int amount) {
     for (Entity entity : client.getWorld().getPlayerEntities()) {
         String d = entity.getDisplayName();
         char u = entity.getUUID().charAt(14);
-        if (entity == player || entity.getNetworkPlayer() == null || (u != '4' && u != '1') || d.startsWith(myTeam) || (entity.isInvisible() && d.startsWith(client.colorSymbol + "c") && !d.contains(" "))) continue;
+        if (entity == player || entity.getNetworkPlayer() == null || (u != '4' && u != '1') || d.startsWith(myTeam) || (entity.isInvisible() && d.startsWith(util.colorSymbol + "c") && !d.contains(" "))) continue;
         double distanceSq = p.distanceToSq(entity.getPosition());
         entityDistances.add(new Object[]{entity, distanceSq});
     }
@@ -220,7 +220,7 @@ double getCurrentWeaponRange() {
     if (item == null || !guns.contains(item.name)) return 0;
 
     for (String t : item.getTooltip()) {
-        String ts = client.util.strip(t);
+        String ts = util.strip(t);
         if (!ts.contains("Range: ")) continue;
         double range = Double.parseDouble(ts.split("Range: ")[1]);
         return range;
@@ -305,11 +305,11 @@ int getBedwarsStatus() {
     int size = sidebar.size();
     if (size < 7) return -1;
 
-    if (!client.util.strip(sidebar.get(0)).startsWith("BED WARS")) {
+    if (!util.strip(sidebar.get(0)).startsWith("BED WARS")) {
         return -1;
     }
 
-    String lobbyId = client.util.strip(sidebar.get(1)).split("  ")[1];
+    String lobbyId = util.strip(sidebar.get(1)).split("  ")[1];
     if (lobbyId.charAt(lobbyId.length() - 1) == ']') {
         lobbyId = lobbyId.split(" ")[0];
     }
@@ -318,11 +318,11 @@ int getBedwarsStatus() {
         return 1;
     }
 
-    if (client.util.strip(sidebar.get(5)).startsWith("R Red:") && client.util.strip(sidebar.get(6)).startsWith("B Blue:")) {
+    if (util.strip(sidebar.get(5)).startsWith("R Red:") && util.strip(sidebar.get(6)).startsWith("B Blue:")) {
         return 3;
     }
 
-    String six = client.util.strip(sidebar.get(6));
+    String six = util.strip(sidebar.get(6));
     if (six.equals("Waiting...") || six.startsWith("Starting in")) {
         return 2;
     }
