@@ -22,7 +22,9 @@
         }
     }
 
-    addAlert("Title", "Hello World", 10000, "/bedwars");
+    void onEnable() {
+        addAlert("Title", "Hello World", 10000, "/bedwars");
+    }
 */
 
 List<Map<String, Object>> alerts = new ArrayList<>();
