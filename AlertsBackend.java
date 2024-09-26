@@ -3,6 +3,7 @@
 
     Renders an alert with the title "Title" and a "Hello World" message for 10 seconds. 
     When clicked, it will send "/bedwars" in the chat.
+    This script is designed to be a resource for you to utilize, so you must run this code from another script.
 
     List<Map<String, Object>> alerts = new ArrayList<>();
 
