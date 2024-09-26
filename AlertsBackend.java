@@ -25,6 +25,33 @@
     void onEnable() {
         addAlert("Title", "Hello World", 10000, "/bedwars");
     }
+
+
+    Additionally, you could send an alert with a distinct phrase such as "5749387394743989". 
+    Then simply look for that message in an outgoing C01 packet to trigger another function instead of sending a message in chat.
+    Now when the alert is clicked, it will call the trigger function in a separate script.
+
+    Script 1:
+
+    void onEnable() {
+        addAlert("Title", "Hello World", 10000, "5749387394743989");
+    }
+
+    Script 2:
+
+    void trigger() {
+        client.chat("/bedwars");
+    }
+
+    boolean onPacketSent(CPacket packet) {
+        if (packet instanceof C01) {
+            C01 c01 = (C01) packet;
+            if (c01.message.equals("5749387394743989")) {
+                trigger();
+                return false;
+            }
+        }
+    }
 */
 
 List<Map<String, Object>> alerts = new ArrayList<>();
