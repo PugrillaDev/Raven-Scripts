@@ -49,7 +49,7 @@ void onPreMotion(PlayerState s) {
     int durability = heldItem != null ? heldItem.durability : 1;
     int maxDurability = heldItem != null ? heldItem.maxDurability : 1;
     int ticksExisted = player.getTicksExisted();
-    predictionTicks = (int) modules.getSlider(scriptName, "Prediction Ticks") + 1;
+    predictionTicks = (int) modules.getSlider(scriptName, "Prediction") + 1;
 
     boolean manual = modules.getButton(scriptName, "Hold Right Click");
     boolean doAiming = durability == maxDurability && guns.contains(itemName) && (!manual || (manual && keybinds.isMouseDown(1)));
