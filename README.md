@@ -1,2 +1,1 @@
-A collection of custom Java scripts designed to enhance and automate various aspects of Minecraft gameplay. This repository aims to provide useful tools and modifications for Minecraft players and modders looking to extend the game's functionality.
-
+This repository contains my collection of custom scripts for the client Raven B4 designed to enhance and automate Minecraft gameplay. I develop and maintain all scripts located in this repository. I also manage all the documentation, which you can find here: [Raven Documentation](https://blowsy.gitbook.io/raven).
