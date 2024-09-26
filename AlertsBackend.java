@@ -1,3 +1,29 @@
+/*
+    Example Usage
+
+    Renders an alert with the title "Title" and a "Hello World" message for 10 seconds. 
+    When clicked, it will send "/bedwars" in the chat.
+
+    List<Map<String, Object>> alerts = new ArrayList<>();
+
+    void addAlert(String title, String message, int duration, String command) {
+        Map<String, Object> alert = new HashMap<>(4);
+        alert.put("title", title);
+        alert.put("message", message);
+        alert.put("duration", duration);
+        alert.put("command", command);
+        alerts.add(alert);
+    }
+
+    void onPreUpdate() {
+        if (!alerts.isEmpty() && !bridge.has("pugalert")) {
+            bridge.add("pugalert", alerts.remove(0));
+        }
+    }
+
+    addAlert("Title", "Hello World", 10000, "/bedwars");
+*/
+
 List<Map<String, Object>> alerts = new ArrayList<>();
 int themeColor;
 float scale = 1;
