@@ -123,7 +123,6 @@ void onRenderWorld(float partialTicks) {
         );
 
         Vec3 screenPos = render.worldToScreen(bedPos.x, bedPos.y, bedPos.z, size, partialTicks);
-
         if (screenPos.z < 0 || screenPos.z >= 1.0003684d) continue;
 
         float currentScale = scale;
