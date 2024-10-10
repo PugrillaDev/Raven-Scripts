@@ -1,3 +1,5 @@
+/* bblr bot for bedwars */
+
 String prefix = "&7[&dR&7]&r ";
 Vec3 bedPosition = null;
 double bedDistance = 0;
