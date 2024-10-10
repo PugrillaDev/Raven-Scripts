@@ -6,6 +6,7 @@ int orange = new Color(255, 100, 0).getRGB(),
 boolean sentPacket;
 double range;
 boolean looking = false;
+float serverYaw = client.getPlayer().getYaw(), serverPitch = client.getPlayer().getPitch();
 
 void onLoad() {
     modules.registerButton("aura", false);
@@ -14,44 +15,57 @@ void onLoad() {
 }
 
 void onPreMotion(PlayerState state) {
-    if (!grinching()) return;
+    if (!checkStatus()) return;
+
     Entity player = client.getPlayer();
     double threshold = modules.getSlider(scriptName, "range") * 1.5;
     double reach = Math.pow(modules.getSlider(scriptName, "range"), 2);
     range = modules.getSlider(scriptName, "range");
-    Vec3 plapos = player.getPosition();
-    plapos.y += 1.62;
+
+    Vec3 playerPos = player.getPosition();
+    playerPos.y += 1.62;
     sentPacket = false;
     skullList.clear();
     boolean shouldRotate = modules.getButton(scriptName, "rotations");
+
     for (TileEntity tileEntity : client.getWorld().getTileEntities()) {
         if (!tileEntity.name.equals("skull")) continue;
+
         Object[] skullData = tileEntity.getSkullData();
         if (skullData == null || skullData[2] == null) continue;
+
         Vec3 skullPosition = tileEntity.getPosition();
-        if (modules.getButton(scriptName, "aura")) {
-            if (!sentPacket && isWithinThreshold(plapos, skullPosition, threshold)) {
-                if (plapos.distanceToSq(skullPosition) < reach) {
-                    if (shouldRotate) {
-                        if (looking) {
-                            client.sendPacketNoEvent(new C08(player.getHeldItem(), skullPosition, 1, new Vec3(0.5, 0.5, 0.5)));
-                            float[] rots = client.getRotations(skullPosition);
-                            state.yaw = rots[0];
-                            state.pitch = rots[1];
-                            looking = false;
-                        } else {
-                            float[] rots = client.getRotations(skullPosition);
-                            state.yaw = rots[0];
-                            state.pitch = rots[1];
-                            looking = true;
-                        }
-                    } else {
+        double distanceSq = playerPos.distanceToSq(skullPosition);
+
+        if (modules.getButton(scriptName, "aura") && !sentPacket && distanceSq < reach) {
+            if (Math.abs(playerPos.x - skullPosition.x) < threshold 
+                && Math.abs(playerPos.y - skullPosition.y) < threshold 
+                && Math.abs(playerPos.z - skullPosition.z) < threshold) {
+
+                if (shouldRotate) {
+                    float[] rotations = getRotations(skullPosition);
+                    float unwrappedYaw = unwrapYaw(rotations[0]);
+
+                    float deltaYaw = unwrappedYaw - serverYaw;
+                    float deltaPitch = rotations[1] - serverPitch;
+
+                    state.yaw = serverYaw + (Math.abs(deltaYaw) >= 0.1 ? deltaYaw : 0);
+                    state.pitch = serverPitch + (Math.abs(deltaPitch) >= 0.1 ? deltaPitch : 0);
+
+                    if (!looking) {
                         client.sendPacketNoEvent(new C08(player.getHeldItem(), skullPosition, 1, new Vec3(0.5, 0.5, 0.5)));
+                        looking = true;
+                    } else {
+                        looking = false;
                     }
-                    sentPacket = true;
+                } else {
+                    client.sendPacketNoEvent(new C08(player.getHeldItem(), skullPosition, 1, new Vec3(0.5, 0.5, 0.5)));
                 }
+
+                sentPacket = true;
             }
         }
+
         synchronized (skullList) {
             skullList.add(skullPosition);
         }
@@ -83,23 +97,52 @@ void onRenderWorld(float partialTicks) {
     }
 }
 
-void onWorldJoin(Entity en) {
-    if (en == client.getPlayer()) {
+void onWorldJoin(Entity entity) {
+    if (entity == client.getPlayer()) {
         skullList.clear();
     }
+}
+
+boolean onPacketSent(CPacket packet) {
+    if (packet.name.startsWith("C05") || packet.name.startsWith("C06")) {
+        C03 c03 = (C03) packet;
+        serverYaw = c03.yaw;
+        serverPitch = c03.pitch;
+    }
+    return true;
 }
 
 void onDisable() {
     skullList.clear();
 }
 
-boolean isWithinThreshold(Vec3 playerPos, Vec3 skullPos, double threshold) {
-    return Math.abs(playerPos.x - skullPos.x) < threshold 
-        && Math.abs(playerPos.z - skullPos.z) < threshold 
-        && Math.abs(playerPos.y - skullPos.y) < threshold;
-}
-
-boolean grinching() {
+boolean checkStatus() {
     List<String> sidebar = client.getWorld().getScoreboard();
     return sidebar != null && util.strip(sidebar.get(0)).startsWith("HALLOWEEN SIMULATOR");
+}
+
+float[] getRotations(Vec3 point) {
+    Entity player = client.getPlayer();
+    Vec3 pos = player.getPosition().offset(0, player.getEyeHeight(), 0);
+    double x = point.x - pos.x;
+    double y = point.y - pos.y;
+    double z = point.z - pos.z;
+    double dist = Math.sqrt(x * x + z * z);
+    float yaw = (float) Math.toDegrees(Math.atan2(z, x)) - 90f;
+    float pitch = (float) Math.toDegrees(-Math.atan2(y, dist));
+
+    yaw = ((yaw % 360) + 360) % 360;
+    return new float[]{ yaw, pitch };
+}
+
+float unwrapYaw(float yaw) {
+    int scaleFactor = (int) Math.floor(serverYaw / 360);
+    float unwrappedYaw = yaw + 360 * scaleFactor;
+
+    if (unwrappedYaw < serverYaw - 180) {
+        unwrappedYaw += 360;
+    } else if (unwrappedYaw > serverYaw + 180) {
+        unwrappedYaw -= 360;
+    }
+    return unwrappedYaw;
 }
