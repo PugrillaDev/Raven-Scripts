@@ -100,6 +100,7 @@ void onRenderWorld(float partialTicks) {
 
     int size = client.getDisplaySize()[2];
 
+    gl.alpha(false);
     for (Map<String, Object> bedData : sortedBedPositions) {
         double distance = (double) bedData.get("distance");
         double lastDistance = (double) bedData.getOrDefault("lastdistance", distance);
@@ -174,6 +175,7 @@ void onRenderWorld(float partialTicks) {
             render.item(itemToRender, itemX + itemPadding / 2f, itemY + itemPadding / 2f, currentScale);
         }
     }
+    gl.alpha(true);
 }
 
 void onWorldJoin(Entity en) {
