@@ -102,6 +102,6 @@ int nextChar(char[] chars, int[] pos) {
 }
 
 String formatAndRound(double num) {
-    double roundedVal = Math.round(num * 100.0) / 100.0;
+    double roundedVal = Math.round(num * 100d) / 100d;
     return (roundedVal % 1 == 0) ? String.valueOf((int) roundedVal) : String.valueOf(roundedVal);
 }
