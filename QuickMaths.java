@@ -1,7 +1,7 @@
 /* Solves the quickmaths message automatically in lobby/pit */
 
 void onLoad() {
-    modules.registerSlider("Delay", "ms", 1500, 0, 5000, 100);;
+    modules.registerSlider("Delay", "ms", 1500, 0, 5000, 100);
 }
 
 String a = "";
