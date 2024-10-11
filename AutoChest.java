@@ -42,6 +42,7 @@ void onPreUpdate() {
         if (doGold) tempitems.add("gold_ingot");
         if (doDiamonds) tempitems.add("diamond");
         if (doEmeralds) tempitems.add("emerald");
+        
         items = tempitems;
     }
 
