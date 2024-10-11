@@ -254,7 +254,7 @@ void searchForBeds() {
             int endZ = (int) playerPos.z + 20;
 
             for (int yLevel : yLevels) { for (int x = startX; x <= endX; x++) { for (int z = startZ; z <= endZ; z++) {
-                String blockKey = "1" + x + "" + yLevel + "" + z;
+                String blockKey = "1" + x + "," + yLevel + "," + z;
                 if (searchedBlocks.containsKey(blockKey)) continue;
 
                 Block block = world.getBlockAt(x, yLevel, z);
@@ -312,7 +312,7 @@ void findYLevels() {
             int endZ = (int) playerPos.z + 4;
 
             for (int x = startX; x <= endX; x++) { for (int y = startY; y <= endY; y++) { for (int z = startZ; z <= endZ; z++) {
-                String blockKey = "2" + x + "" + y + "" + z;
+                String blockKey = "2" + x + "," + y + "," + z;
                 if (searchedBlocks.containsKey(blockKey)) continue;
 
                 Block block = world.getBlockAt(x, y, z);
