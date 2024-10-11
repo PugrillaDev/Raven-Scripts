@@ -16,7 +16,7 @@ boolean onChat(String message) {
     String msg = util.strip(message);
     if (msg.startsWith("QUICK MATHS! Solve: ")) {
         client.print(message);
-        String answer = solveExpression(msg);
+        String answer = solve(msg);
         client.print("&7[&aQM&7]&e " + msg.split(": ")[1] + " = &a" + answer);
         client.async(() -> {
             client.sleep((int) modules.getSlider(scriptName, "Delay"));
@@ -27,41 +27,47 @@ boolean onChat(String message) {
     return true;
 }
 
-String solveExpression(String expression) {
+String solve(String expression) {
     expression = expression.replace("QUICK MATHS! Solve: ", "").replace("x", "*");
-    return formatAndRound(parseExpression(expression));
+    return formatAndRound(parse(expression));
 }
 
-double parseExpression(String expr) {
+double parse(String expr) {
     char[] chars = expr.toCharArray();
     int[] pos = { -1 };
     int[] ch = { nextChar(chars, pos) };
-    return parse(chars, pos, ch);
-}
 
-double parse(char[] chars, int[] pos, int[] ch) {
-    double result = parseExpressionInternal(chars, pos, ch);
+    double result = parseExpression(chars, pos, ch);
     if (pos[0] < chars.length) {
         return 0;
     }
+
     return result;
 }
 
-double parseExpressionInternal(char[] chars, int[] pos, int[] ch) {
+double parseExpression(char[] chars, int[] pos, int[] ch) {
     double x = parseTerm(chars, pos, ch);
     while (true) {
-        if (eat(chars, pos, ch, '+')) x += parseTerm(chars, pos, ch);
-        else if (eat(chars, pos, ch, '-')) x -= parseTerm(chars, pos, ch);
-        else return x;
+        if (eat(chars, pos, ch, '+')) {
+            x += parseTerm(chars, pos, ch);
+        } else if (eat(chars, pos, ch, '-')) {
+            x -= parseTerm(chars, pos, ch);
+        } else {
+            return x;
+        }
     }
 }
 
 double parseTerm(char[] chars, int[] pos, int[] ch) {
     double x = parseFactor(chars, pos, ch);
     while (true) {
-        if (eat(chars, pos, ch, '*')) x *= parseFactor(chars, pos, ch);
-        else if (eat(chars, pos, ch, '/')) x /= parseFactor(chars, pos, ch);
-        else return x;
+        if (eat(chars, pos, ch, '*')) {
+            x *= parseFactor(chars, pos, ch);
+        } else if (eat(chars, pos, ch, '/')) {
+            x /= parseFactor(chars, pos, ch);
+        } else {
+            return x;
+        }
     }
 }
 
@@ -72,7 +78,7 @@ double parseFactor(char[] chars, int[] pos, int[] ch) {
     double x;
     int startPos = pos[0];
     if (eat(chars, pos, ch, '(')) {
-        x = parseExpressionInternal(chars, pos, ch);
+        x = parseExpression(chars, pos, ch);
         eat(chars, pos, ch, ')');
     } else if ((ch[0] >= '0' && ch[0] <= '9') || ch[0] == '.') {
         while ((ch[0] >= '0' && ch[0] <= '9') || ch[0] == '.') {
