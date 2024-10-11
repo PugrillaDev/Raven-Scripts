@@ -10,6 +10,8 @@ float waveSpeed;
 int background, direction, animationMode, outlineMode, color;
 float gap, lineGap, textScale;
 float xOffset, yOffset;
+boolean firstTime = false;
+int resetTicks = 0;
 
 void onLoad() {
     setDataArray("KillAura", "", "Targets", new String[]{"Single", "Single", "Switch"});
@@ -43,26 +45,6 @@ void onLoad() {
 
     modules.registerSlider("Outline Mode", "", 0, new String[]{util.colorSymbol + "cDisabled", "Left", "Right", util.color("Full &cWIP")});
     modules.registerSlider("Line Gap", "", 2, 0, 5, 0.1);
-    
-    Map<String, List<String>> categories = modules.getCategories();
-    for (String category : categories.keySet()) {
-        if (category.equalsIgnoreCase("profiles") || category.equalsIgnoreCase("fun")) continue;
-
-        List<String> modulesList = categories.get(category);
-        for (String module : modulesList) {
-            Map<String, Object> modData = new HashMap<>();
-            modData.put("name", module);
-            modData.put("visibility", false);
-            modData.put("offset", 0);
-            modData.put("scale", 0);
-            modData.put("animating", false);
-            modData.put("animatingUp", false);
-            modData.put("animationStart", 0L);
-            modData.put("animationProgress", 0);
-            mods.add(modData);
-        }
-    }
-    sortModules();
 }
 
 void setDataStatic(String moduleName, String alias, String overrideValue) {
@@ -147,12 +129,37 @@ void updateCustomData(Map<String, Object> customData) {
 }
 
 void onEnable() {
+    resetTicks = 0;
+    if (!firstTime) {
+        Map<String, List<String>> categories = modules.getCategories();
+        for (String category : categories.keySet()) {
+            if (category.equalsIgnoreCase("profiles") || category.equalsIgnoreCase("fun")) continue;
+
+            List<String> modulesList = categories.get(category);
+            for (String module : modulesList) {
+                Map<String, Object> modData = new HashMap<>();
+                modData.put("name", module);
+                modData.put("visibility", false);
+                modData.put("offset", 0);
+                modData.put("scale", 0);
+                modData.put("animating", false);
+                modData.put("animatingUp", false);
+                modData.put("animationStart", 0L);
+                modData.put("animationProgress", 0);
+                mods.add(modData);
+            }
+        }
+        sortModules();
+        firstTime = true;
+    }
+
     updateButtonStates();
     updateSliders();
     sortModules();
 }
 
 void onPreUpdate() {
+    resetTicks++;
     int ticks = client.getPlayer().getTicksExisted();
     updateEnabledModules();
     gap = (float) modules.getSlider(scriptName, "Gap");
@@ -372,9 +379,8 @@ int clamp(int val, int min, int max) {
 void updateEnabledModules() {
     long now = client.time();
     List<String> previousEnabledModules = new ArrayList<>();
-    int ex = client.getPlayer().getTicksExisted();
 
-    if (ex < 60 || ex % 20 == 0) {
+    if (resetTicks < 60 || resetTicks % 20 == 0) {
         updateButtonStates();
     }
 
