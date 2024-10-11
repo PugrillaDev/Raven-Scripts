@@ -38,17 +38,13 @@ void onLoad() {
 }
 
 ItemStack getStackFromName(String name) {
-    ItemStack item = stacks.get(name);
-    if (item == null) {
+    return stacks.computeIfAbsent(name, key -> {
         try {
-            item = new ItemStack(name);
-            stacks.put(name, item);
+            return new ItemStack(key);
         } catch (Exception e) {
-            item = new ItemStack("sponge");
-            stacks.put(name, item);
+            return new ItemStack("sponge");
         }
-    }
-    return item;
+    });
 }
 
 void onPreUpdate() {
