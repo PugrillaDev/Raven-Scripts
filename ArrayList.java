@@ -50,7 +50,6 @@ void onLoad() {
 
         List<String> modulesList = categories.get(category);
         for (String module : modulesList) {
-            modules.registerButton(module, false);
             Map<String, Object> modData = new HashMap<>();
             modData.put("name", module);
             modData.put("visibility", false);
@@ -441,7 +440,7 @@ float quadInOut(float t) {
 void updateButtonStates() {
     for (Map<String, Object> mod : mods) {
         String moduleName = (String) mod.get("name");
-        boolean isButtonEnabled = modules.getButton(scriptName, moduleName);
+        boolean isButtonEnabled = !modules.isHidden(moduleName);
         mod.put("buttonEnabled", isButtonEnabled);
     }
 

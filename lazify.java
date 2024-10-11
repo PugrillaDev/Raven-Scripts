@@ -3,6 +3,8 @@
     add your own hypixelKey definition (String hypixelKey = "key") either here or with a loadstring
 */
 
+String hypixelKey;
+
 final String useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 Map<String, Map<String, Object>> statsCache = new ConcurrentHashMap<>();
