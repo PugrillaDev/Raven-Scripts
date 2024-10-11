@@ -16,9 +16,8 @@ boolean onChat(String message) {
     String msg = util.strip(message);
     if (msg.startsWith("QUICK MATHS! Solve: ")) {
         client.print(message);
-        String expression =  msg.split(": ")[1];
         String answer = solve(msg);
-        client.print("&7[&aQM&7]&e " + expression + " = &a" + answer);
+        client.print("&7[&aQM&7]&e " + msg.split(": ")[1] + " = &a" + answer);
         client.async(() -> {
             client.sleep((int) modules.getSlider(scriptName, "Delay"));
             a = answer;
