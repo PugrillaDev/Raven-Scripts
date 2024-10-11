@@ -1,6 +1,6 @@
 /* 
     overlay that i never finished because i quit and then game died
-    add your own hypixelKey definition (String hypixelKey = "key") either here or with a loadstring
+    add your own hypixelKey definition (String hypixelKey = "key") either here or with loadstring
 */
 
 final String useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
