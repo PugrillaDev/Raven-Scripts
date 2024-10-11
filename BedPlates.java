@@ -40,8 +40,13 @@ void onLoad() {
 ItemStack getStackFromName(String name) {
     ItemStack item = stacks.get(name);
     if (item == null) {
-        item = new ItemStack(name);
-        stacks.put(name, item);
+        try {
+            item = new ItemStack(name);
+            stacks.put(name, item);
+        } catch (Exception e) {
+            item = new ItemStack("sponge");
+            stacks.put(name, item);
+        }
     }
     return item;
 }
