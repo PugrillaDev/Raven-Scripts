@@ -16,75 +16,92 @@ boolean onChat(String message) {
     String msg = util.strip(message);
     if (msg.startsWith("QUICK MATHS! Solve: ")) {
         client.print(message);
-        String answer = solve(msg);
+        String answer = solveExpression(msg);
         client.print("&7[&aQM&7]&e " + msg.split(": ")[1] + " = &a" + answer);
         client.async(() -> {
-            client.sleep((int)modules.getSlider(scriptName, "Delay"));
+            client.sleep((int) modules.getSlider(scriptName, "Delay"));
             a = answer;
         });
         return false;
     }
-
     return true;
 }
 
-String solve(String expression) {
+String solveExpression(String expression) {
     expression = expression.replace("QUICK MATHS! Solve: ", "").replace("x", "*");
+    return formatAndRound(parseExpression(expression));
+}
 
-    while (expression.contains("(")) {
-        int start = expression.lastIndexOf('(');
-        int end = expression.indexOf(')', start);
-        String result = solve(expression.substring(start + 1, end));
-        expression = expression.substring(0, start) + formatAndRound(result) + expression.substring(end + 1);
+double parseExpression(String expr) {
+    char[] chars = expr.toCharArray();
+    int[] pos = { -1 };
+    int[] ch = { nextChar(chars, pos) };
+    return parse(chars, pos, ch);
+}
+
+double parse(char[] chars, int[] pos, int[] ch) {
+    double result = parseExpressionInternal(chars, pos, ch);
+    if (pos[0] < chars.length) {
+        return 0;
     }
+    return result;
+}
 
-    if (expression.contains("+")) {
-        String[] parts = expression.split("\\+", 2);
-        return formatAndRound(add(solve(parts[0]), solve(parts[1])));
-    } else if (expression.contains("-")) {
-        String[] parts = expression.split("-", 2);
-        return formatAndRound(subtract(solve(parts[0]), solve(parts[1])));
-    } else if (expression.contains("*")) {
-        String[] parts = expression.split("\\*", 2);
-        return formatAndRound(multiply(solve(parts[0]), solve(parts[1])));
-    } else if (expression.contains("/")) {
-        String[] parts = expression.split("/", 2);
-        return formatAndRound(divide(solve(parts[0]), solve(parts[1])));
-    } else if (expression.contains("^")) {
-        String[] parts = expression.split("\\^", 2);
-        return formatAndRound(power(solve(parts[0]), solve(parts[1])));
+double parseExpressionInternal(char[] chars, int[] pos, int[] ch) {
+    double x = parseTerm(chars, pos, ch);
+    while (true) {
+        if (eat(chars, pos, ch, '+')) x += parseTerm(chars, pos, ch);
+        else if (eat(chars, pos, ch, '-')) x -= parseTerm(chars, pos, ch);
+        else return x;
+    }
+}
+
+double parseTerm(char[] chars, int[] pos, int[] ch) {
+    double x = parseFactor(chars, pos, ch);
+    while (true) {
+        if (eat(chars, pos, ch, '*')) x *= parseFactor(chars, pos, ch);
+        else if (eat(chars, pos, ch, '/')) x /= parseFactor(chars, pos, ch);
+        else return x;
+    }
+}
+
+double parseFactor(char[] chars, int[] pos, int[] ch) {
+    if (eat(chars, pos, ch, '+')) return parseFactor(chars, pos, ch);
+    if (eat(chars, pos, ch, '-')) return -parseFactor(chars, pos, ch);
+
+    double x;
+    int startPos = pos[0];
+    if (eat(chars, pos, ch, '(')) {
+        x = parseExpressionInternal(chars, pos, ch);
+        eat(chars, pos, ch, ')');
+    } else if ((ch[0] >= '0' && ch[0] <= '9') || ch[0] == '.') {
+        while ((ch[0] >= '0' && ch[0] <= '9') || ch[0] == '.') {
+            ch[0] = nextChar(chars, pos);
+        }
+        x = Double.parseDouble(new String(chars, startPos, pos[0] - startPos));
     } else {
-        return formatAndRound(expression.trim());
+        return 0;
     }
+
+    if (eat(chars, pos, ch, '^')) x = Math.pow(x, parseFactor(chars, pos, ch));
+    return x;
 }
 
-String formatAndRound(String val) {
-    double num = Double.parseDouble(val);
-    double roundedVal = util.round(num, 2);
-
-    if (roundedVal % 1 == 0) {
-        return String.valueOf((int)roundedVal);
-    } else {
-        return String.valueOf(roundedVal);
+boolean eat(char[] chars, int[] pos, int[] ch, int charToEat) {
+    while (ch[0] == ' ') ch[0] = nextChar(chars, pos);
+    if (ch[0] == charToEat) {
+        ch[0] = nextChar(chars, pos);
+        return true;
     }
+    return false;
 }
 
-String add(String a, String b) {
-    return String.valueOf(Double.parseDouble(a) + Double.parseDouble(b));
+int nextChar(char[] chars, int[] pos) {
+    pos[0]++;
+    return (pos[0] < chars.length) ? chars[pos[0]] : -1;
 }
 
-String subtract(String a, String b) {
-    return String.valueOf(Double.parseDouble(a) - Double.parseDouble(b));
-}
-
-String multiply(String a, String b) {
-    return String.valueOf(Double.parseDouble(a) * Double.parseDouble(b));
-}
-
-String divide(String a, String b) {
-    return String.valueOf(Double.parseDouble(a) / Double.parseDouble(b));
-}
-
-String power(String a, String b) {
-    return String.valueOf(Math.pow(Double.parseDouble(a), Double.parseDouble(b)));
+String formatAndRound(double num) {
+    double roundedVal = Math.round(num * 100.0) / 100.0;
+    return (roundedVal % 1 == 0) ? String.valueOf((int) roundedVal) : String.valueOf(roundedVal);
 }
