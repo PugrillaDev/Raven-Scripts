@@ -26,7 +26,7 @@ String[] keyNames = {
 };
 
 int backgroundColor = new Color(37, 37, 43).getRGB();
-int borderColor = new Color(43, 45, 49).getRGB();
+int borderColor = new Color(52, 54, 59).getRGB();
 double verticalOffset = 1;
 int maxDistance = 100;
 boolean autoScale;
