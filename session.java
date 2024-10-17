@@ -1,4 +1,7 @@
-/* Made by pug */
+/* 
+    shows your current bedwars session
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/session.java"
+*/
 
 Map<String, Map<String, Integer>> session = new HashMap<>();
 HashSet<String> killKeywords = new HashSet<>(Arrays.asList("against", "by", "fighting", "for", "from", "meet", "of", "seeing", "to", "was", "with"));

@@ -1,4 +1,5 @@
 /*
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/AlertsBackend.java"
     Example Usage
 
     Renders an alert with the title "Title" and a "Hello World" message for 10 seconds. 

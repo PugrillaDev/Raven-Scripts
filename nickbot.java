@@ -1,5 +1,6 @@
 /* 
-    Made by Pug 
+    bot that auto claims nicks based on specified parameters
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/nickbot.java"
 */
 
 static final String NICK_CLAIM_COMMAND = "/nick actuallyset ";

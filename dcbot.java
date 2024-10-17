@@ -1,4 +1,7 @@
-/* bblr bot for bedwars */
+/* 
+    dcbot/infinite bblr bot for hypixel bedwars
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/dcbot.java"
+*/
 
 String prefix = "&7[&dR&7]&r ";
 Vec3 bedPosition = null;

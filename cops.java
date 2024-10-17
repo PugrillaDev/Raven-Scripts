@@ -1,3 +1,8 @@
+/* 
+    aimbot/anti recoil for hypixel cops n crims
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/cops.java"
+*/
+
 List<Entity> targets = new ArrayList<>();
 int targetColor = new Color(255, 0, 0).getRGB(), hitcolor = new Color(0, 255, 0).getRGB();
 int predictionTicks = 1;

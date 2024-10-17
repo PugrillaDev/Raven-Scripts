@@ -1,3 +1,8 @@
+/* 
+    custom arraylist, needs some more work on it but cba. make pull requests if you added anything and i'll check it out
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/ArrayList.java"
+*/
+
 List<Map<String, Object>> mods = new ArrayList<>();
 Map<String, Map<String, String>> customModuleData = new HashMap<>();
 List<Map<String, Object>> customDataList = new ArrayList<>();

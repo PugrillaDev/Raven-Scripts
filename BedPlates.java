@@ -1,3 +1,9 @@
+/* 
+    renders the blocks covering a bed defense
+    designed specifically for bedwars may not work properly in other gamemodes
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/BedPlates.java"
+*/
+
 Map<String, Map<String, Object>> bedPositions = new ConcurrentHashMap<>();
 Map<String, Boolean> searchedBlocks = new ConcurrentHashMap<>();
 Map<String, ItemStack> stacks = new HashMap<>();

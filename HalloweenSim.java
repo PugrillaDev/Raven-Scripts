@@ -1,3 +1,8 @@
+/* 
+    renders candy in hypixel halloween simulator
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/HalloweenSim.java"
+*/
+
 List<Vec3> skullList = new ArrayList<>();
 int orange = new Color(255, 100, 0).getRGB(),
     green =  Color.GREEN.getRGB(),

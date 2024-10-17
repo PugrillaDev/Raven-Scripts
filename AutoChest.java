@@ -1,3 +1,8 @@
+/* 
+    automatically stores/takes resources from your chest/enderchest in bedwars 
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/AutoChest.java"
+*/
+
 int status = -1, delay = 0, delayTicks = 0, inChestDelay = 1;
 HashSet<String> items = new HashSet<>();
 boolean automatic = false, foundItemsInInventory = false, foundItemsInChest = false, foundAllItemsInInventory = false, foundAllItemsInChest = false, doIron = false, doGold = false, doDiamonds = false, doEmeralds = false, stopWhenDone = true;

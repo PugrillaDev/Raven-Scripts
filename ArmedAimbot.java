@@ -1,3 +1,8 @@
+/* 
+    aimbot for armed bedwars dreams mode
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/ArmedAimbot.java"
+*/
+
 int targetColor = new Color(255, 0, 0).getRGB();
 int predictionTicks = 1;
 int aim = 0;

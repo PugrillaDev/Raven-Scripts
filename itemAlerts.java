@@ -13,6 +13,8 @@
     Display names are the names display for the item, names are the raw minecraft names; they are different.
     Items in your inventory may have different displayName values than other players. (ex: Dream Defenders vs Machine Gun Bow) 
     Don't be stupid, look at the code as a reference to add items.
+
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/itemAlerts.java"
 */
 
 Map<String, Map<String, Object>> playerItems = new HashMap<>();
