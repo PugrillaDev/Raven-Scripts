@@ -6,12 +6,16 @@
 
 Map<Integer, Float> playerHealth = new HashMap<>();
 List<Map<String, Object>> objects = new ArrayList<>();
-int green = new Color(0, 255, 0).getRGB(), red = new Color(255, 0, 0).getRGB(), mode;
+int green = new Color(0, 255, 0).getRGB(), red = new Color(255, 0, 0).getRGB(), mode, colorMode;
 double baseScale, yOffset;
-long duration;
+long duration, fadeOutTime = 150;
+boolean showHealing, showDamage;
 
 void onLoad() {
+    modules.registerButton("Show Healing", true);
+    modules.registerButton("Show Damage", true);
     modules.registerSlider("Mode", "", 0, new String[]{ "Hearts", "Health Points"});
+    modules.registerSlider("Color", "", 0, new String[]{ "RAG", "Team"});
     modules.registerSlider("Scale", "", 5, 0, 10, 0.5);
     modules.registerSlider("Duration", "s", 1.5, 0, 5, 0.1);
     modules.registerSlider("Y Offset", "", 1.8, -2, 3, 0.1);
@@ -20,27 +24,35 @@ void onLoad() {
 void onPreUpdate() {
     yOffset = modules.getSlider(scriptName, "Y Offset");
     mode = (int) modules.getSlider(scriptName, "Mode");
+    colorMode = (int) modules.getSlider(scriptName, "Color");
+    showHealing = modules.getButton(scriptName, "Show Healing");
+    showDamage = modules.getButton(scriptName, "Show Damage");
     Entity player = client.getPlayer();
-    Vec3 me = player.getPosition().offset(0, 1.62, 0);
+    Vec3 me = render.getPosition();
     long now = client.time();
 
     for (Entity p : client.getWorld().getPlayerEntities()) {
-        if (p == player) continue;
         int entityId = p.entityId;
 
         float hp = p.getHealth() + p.getAbsorption();
         float health = hp / (mode == 0 ? 2 : 1);
-
         float lastHp = playerHealth.getOrDefault(entityId, hp);
         float lastHealth = lastHp / (mode == 0 ? 2 : 1);
 
         playerHealth.put(entityId, hp);
 
-        if (health == lastHealth || p.getTicksExisted() < 2) continue;
+        if (p.isDead() || p.getTicksExisted() < 2 || health == lastHealth || (!showDamage && health < lastHealth) || (!showHealing && health > lastHealth)) continue;
 
+        float difference = health - lastHealth;
+        String renderHealth;
         int color = health > lastHealth ? green : red;
-        
-        String renderHealth = formatDoubleStr(util.round((double) (health - lastHealth), 1));
+
+        if (colorMode == 1) {
+            String teamColorCode = p.getDisplayName().substring(0, 2);
+            renderHealth = teamColorCode + formatDoubleStr(util.round((double) difference, 1));
+        } else {
+            renderHealth = formatDoubleStr(util.round(Math.abs((double) difference), 1));
+        }
 
         Vec3 position = p.getPosition().offset(0, yOffset, 0);
 
@@ -76,7 +88,7 @@ void onRenderTick(float partialTicks) {
         Map<String, Object> object = it.next();
         long timeElapsed = now - (long) object.get("time");
 
-        if (timeElapsed > duration) {
+        if (timeElapsed > duration + fadeOutTime) {
             it.remove();
             continue;
         }
@@ -87,6 +99,16 @@ void onRenderTick(float partialTicks) {
         Vec3 position = (Vec3) object.get("position");
         int color = (int) object.get("color");
         String health = (String) object.get("health");
+
+        int alpha = 255;
+        if (timeElapsed > duration) {
+            alpha = (int) (255 * (1 - ((double) (timeElapsed - duration) / fadeOutTime)));
+            color = (color & 0x00FFFFFF) | (alpha << 24);
+        }
+        if (alpha <= 5) {
+            it.remove();
+            continue;
+        }
 
         Vec3 screenPos = render.worldToScreen(position.x, position.y, position.z, size, partialTicks);
         if (screenPos.z < 0 || screenPos.z >= 1.0003684d) continue;

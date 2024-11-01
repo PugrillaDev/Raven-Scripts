@@ -48,7 +48,7 @@ ItemStack getStackFromName(String name) {
         try {
             return new ItemStack(key);
         } catch (Exception e) {
-            return new ItemStack("sponge");
+            return new ItemStack("barrier");
         }
     });
 }
