@@ -7,7 +7,7 @@
 Map<Integer, Float> playerHealth = new HashMap<>();
 List<Map<String, Object>> objects = new ArrayList<>();
 int green = new Color(0, 255, 0).getRGB(), red = new Color(255, 0, 0).getRGB(), mode, colorMode;
-double baseScale, yOffset;
+double baseScale, yOffset, fadeDistance = 2, min = 0.5;
 long duration, fadeOutTime = 150;
 boolean showHealing, showDamage;
 
@@ -27,8 +27,7 @@ void onPreUpdate() {
     colorMode = (int) modules.getSlider(scriptName, "Color");
     showHealing = modules.getButton(scriptName, "Show Healing");
     showDamage = modules.getButton(scriptName, "Show Damage");
-    Entity player = client.getPlayer();
-    Vec3 me = render.getPosition();
+    Vec3 me = render.getPosition().offset(0, 1.62, 0);
     long now = client.time();
 
     for (Entity p : client.getWorld().getPlayerEntities()) {
@@ -84,11 +83,12 @@ void onPreUpdate() {
 void onRenderTick(float partialTicks) {
     long now = client.time();
     int size = client.getDisplaySize()[2];
+
     for (Iterator<Map<String, Object>> it = objects.iterator(); it.hasNext();) {
         Map<String, Object> object = it.next();
-        long timeElapsed = now - (long) object.get("time");
+        long elapsed = now - (long) object.get("time");
 
-        if (timeElapsed > duration + fadeOutTime) {
+        if (elapsed > duration + fadeOutTime) {
             it.remove();
             continue;
         }
@@ -101,14 +101,22 @@ void onRenderTick(float partialTicks) {
         String health = (String) object.get("health");
 
         int alpha = 255;
-        if (timeElapsed > duration) {
-            alpha = (int) (255 * (1 - ((double) (timeElapsed - duration) / fadeOutTime)));
-            color = (color & 0x00FFFFFF) | (alpha << 24);
+        if (elapsed > duration) {
+            alpha = (int) (255 * (1 - ((double) (elapsed - duration) / fadeOutTime)));
         }
+
         if (alpha <= 5) {
             it.remove();
             continue;
         }
+
+        if (distance < fadeDistance) {
+            double scaledDistance = (distance - min) / (fadeDistance - min);
+            int proximityAlpha = (int) (5 + (250 * Math.max(scaledDistance, 0)));
+            alpha = Math.min(alpha, proximityAlpha);
+        }
+
+        color = (color & 0x00FFFFFF) | (alpha << 24);
 
         Vec3 screenPos = render.worldToScreen(position.x, position.y, position.z, size, partialTicks);
         if (screenPos.z < 0 || screenPos.z >= 1.0003684d) continue;
