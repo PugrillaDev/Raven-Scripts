@@ -1,3 +1,8 @@
+/* 
+    simple chat hotkeys
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/hotkeys.java"
+*/
+
 void onLoad() {
     modules.registerButton("Show Alerts", true);
 
