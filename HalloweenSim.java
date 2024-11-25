@@ -11,7 +11,12 @@ int orange = new Color(255, 100, 0).getRGB(),
 boolean sentPacket;
 double range;
 boolean looking = false;
-float serverYaw = client.getPlayer().getYaw(), serverPitch = client.getPlayer().getPitch();
+float serverYaw, serverPitch;
+
+void onEnable() {
+    serverYaw = client.getPlayer().getYaw();
+    serverPitch = client.getPlayer().getPitch();
+}
 
 void onLoad() {
     modules.registerButton("aura", false);

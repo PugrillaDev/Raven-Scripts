@@ -6,7 +6,7 @@
 int targetColor = new Color(255, 0, 0).getRGB();
 int predictionTicks = 1;
 int aim = 0;
-float serverYaw = client.getPlayer().getYaw(), serverPitch = client.getPlayer().getPitch();
+float serverYaw, serverPitch;
 Entity target = null;
 Vec3 aimPoint = null;
 boolean sentAlready = false;
@@ -36,6 +36,11 @@ double width = 0.6 * hitboxScale;
 double height = 1.8 * hitboxScale;
 double halfWidth = width / 2d;
 double halfHeight = height / 2d;
+
+void onEnable() {
+    serverYaw = client.getPlayer().getYaw();
+    serverPitch = client.getPlayer().getPitch();
+}
 
 void onLoad() {
     modules.registerButton("Hold Right Click", true);

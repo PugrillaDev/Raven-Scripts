@@ -33,7 +33,7 @@ boolean debug, shadow;
 
 long sessionStart = client.time(), gameStart = 0L, gameEnd = 0L;
 
-String myTeam = "", myName = client.getPlayer().getName();
+String myTeam = "", myName;
 String currentUUID, lastUUID;
 
 void onLoad() {
@@ -253,6 +253,7 @@ void onPreUpdate() {
 }
 
 void onRenderTick(float partialTicks) {
+    if (status < 1) return;
     if (!client.getScreen().isEmpty() && !client.getScreen().startsWith("GuiChat")) return;
 
     render.rect(startX, startY, endX, endY, background);

@@ -4,7 +4,7 @@
     loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/DamageTags.java"
 */
 
-Map<Integer, Float> playerHealth = new HashMap<>();
+Map<String, Float> playerHealth = new HashMap<>();
 List<Map<String, Object>> objects = new ArrayList<>();
 int green = new Color(0, 255, 0).getRGB(), red = new Color(255, 0, 0).getRGB(), mode, colorMode;
 double baseScale, yOffset, fadeDistance = 2, min = 0.5;
@@ -31,7 +31,7 @@ void onPreUpdate() {
     long now = client.time();
 
     for (Entity p : client.getWorld().getPlayerEntities()) {
-        int entityId = p.entityId;
+        String entityId = String.valueOf(p.entityId) + p.getUUID();
 
         float hp = p.getHealth() + p.getAbsorption();
         float health = hp / (mode == 0 ? 2 : 1);

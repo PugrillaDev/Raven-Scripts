@@ -27,7 +27,7 @@ HashSet<String> checkedPlayers = new HashSet<>();
 List<Map<String, Object>> alerts = new ArrayList<>();
 
 boolean showDistance = true, showTeammates = false, debug = false, showSharpness = false, showProtection = false;
-String myName = client.getPlayer().getName(), myTeam = "", chatPrefix = "&7[&dR&7]&d&r ";
+String myName, myTeam = "", chatPrefix = "&7[&dR&7]&d&r ";
 String[] colorKeysArray = {"c", "9", "a", "e", "b", "f", "d", "8"};
 int status = -1, DELAY_INTERVAL = 15000;
 

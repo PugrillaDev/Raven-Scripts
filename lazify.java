@@ -617,7 +617,7 @@ boolean showTeamPrefix = false;
 boolean showTeamColors = false;
 boolean showHeads = false;
 String sortBy;
-int status = getBedwarsStatus();
+int status = 0;
 int overlayTicks = 5;
 float headsSize = fontHeight - 1;
 
