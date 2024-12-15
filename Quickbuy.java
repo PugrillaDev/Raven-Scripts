@@ -28,7 +28,7 @@ String[] keyNames = {
     "F6", "F7", "HOME", "INSERT", "LBRACKET", "LCONTROL", "LMENU", "LMETA", "LSHIFT", "MINUS",
     "NUMPAD0", "NUMPAD1", "NUMPAD2", "NUMPAD3", "NUMPAD4", "NUMPAD5", "NUMPAD6", "NUMPAD7",
     "NUMPAD8", "NUMPAD9", "PERIOD", "RETURN", "RCONTROL", "RSHIFT", "RBRACKET", "SEMICOLON",
-    "SLASH", "SPACE", "TAB"
+    "SLASH", "SPACE", "TAB", "GRAVE"
 };
 String[] slotNames = {"None", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 HashSet<String> pickaxeTypes = new HashSet<>(Arrays.asList("wooden_pickaxe", "iron_pickaxe", "golden_pickaxe", "diamond_pickaxe"));
