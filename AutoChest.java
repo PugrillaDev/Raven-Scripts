@@ -15,7 +15,7 @@ String[] keyNames = {
     "F6", "F7", "HOME", "INSERT", "LBRACKET", "LCONTROL", "LMENU", "LMETA", "LSHIFT", "MINUS",
     "NUMPAD0", "NUMPAD1", "NUMPAD2", "NUMPAD3", "NUMPAD4", "NUMPAD5", "NUMPAD6", "NUMPAD7",
     "NUMPAD8", "NUMPAD9", "PERIOD", "RETURN", "RCONTROL", "RSHIFT", "RBRACKET", "SEMICOLON",
-    "SLASH", "SPACE", "TAB", "GRAVE", "Hello"
+    "SLASH", "SPACE", "TAB", "GRAVE",
 };
 
 void onLoad() {
