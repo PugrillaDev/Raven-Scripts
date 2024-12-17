@@ -1,9 +1,7 @@
 /* 
     custom arraylist, needs some more work on it but cba. make pull requests if you added anything and i'll check it out
     loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/ArrayList.java"
-    haha hi - mic
 */
-
 List<Map<String, Object>> mods = new ArrayList<>();
 Map<String, Map<String, String>> customModuleData = new HashMap<>();
 List<Map<String, Object>> customDataList = new ArrayList<>();
@@ -13,12 +11,11 @@ int animationDuration;
 float moduleHeight;
 int colorMode;
 float waveSpeed;
-int theme, background, direction, animationMode, outlineMode, color;
+int background, direction, animationMode, outlineMode, color;
 float gap, lineGap, textScale;
 float xOffset, yOffset;
 boolean firstTime = false;
 int resetTicks = 0;
-boolean lowercase, showCustomData;
 
 void onLoad() {
     setDataArray("KillAura", "", "Targets", new String[]{"Single", "Single", "Switch"});
@@ -28,9 +25,8 @@ void onLoad() {
     setDataArray("NoSlow", "", "Mode", new String[]{"Vanilla", "Float", "Interact", "Invalid", "Jump", "Sneak"});
     setDataArray("NoFall", "", "Mode", new String[]{"Spoof", "Single", "Extra", "NoGround A", "NoGround B", "Precision", "Position"});
     setDataArray("BedAura", "", "Break mode", new String[]{"Legit", "Instant", "Swap"});
-    
+
     // Color settings
-    modules.registerSlider("Theme", "", 0, new String[]{util.colorSymbol + "cDisabled", util.colorSymbol + "cCherry", util.colorSymbol + "dCotton candy", util.colorSymbol + "6Flare", util.colorSymbol + "dFlower", util.colorSymbol + "eGold", util.colorSymbol + "7Grayscale", util.colorSymbol + "9Royal", util.colorSymbol + "bSky", util.colorSymbol + "aVine"});
     modules.registerSlider("Color 1 - Red", "", 255, 0, 255, 1);
     modules.registerSlider("Color 1 - Green", "", 0, 0, 255, 1);
     modules.registerSlider("Color 1 - Blue", "", 0, 0, 255, 1);
@@ -43,7 +39,7 @@ void onLoad() {
     modules.registerSlider("Direction", "Direction", 1, new String[]{"Up", "Down"});
     modules.registerSlider("Wave Speed", "s", 5, 0.1, 10, 0.1);
 
-    modules.registerSlider("Animations", "", 0, new String[]{"None", "Scale Right", "Scale Center"});
+    modules.registerSlider("Animations", "", 0, new String[]{"Scale Right", util.color("Scale Center &cWIP")});
     modules.registerSlider("Animation Speed", "ms", 250, 0, 2000, 10);
 
     modules.registerSlider("Gap", "", 1, 0, 5, 0.1);
@@ -53,9 +49,6 @@ void onLoad() {
 
     modules.registerSlider("Outline Mode", "", 0, new String[]{util.colorSymbol + "cDisabled", "Left", "Right", util.color("Full &cWIP")});
     modules.registerSlider("Line Gap", "", 2, 0, 5, 0.1);
-
-    modules.registerButton("Lowercase", false);
-    modules.registerButton("Show custom data", false);
 }
 
 void setDataStatic(String moduleName, String alias, String overrideValue) {
@@ -106,33 +99,31 @@ void updateCustomData(Map<String, Object> customData) {
 
     String overrideValue = "";
 
-    if (showCustomData) {
-        switch ((String) customData.get("type")) {
-            case "fixed":
-                overrideValue = (String) customData.get("overrideValue");
-                break;
+    switch ((String) customData.get("type")) {
+        case "fixed":
+            overrideValue = (String) customData.get("overrideValue");
+            break;
 
-            case "placeholders":
-                String displayString = (String) customData.get("displayString");
-                String[] placeholders = (String[]) customData.get("placeholders");
+        case "placeholders":
+            String displayString = (String) customData.get("displayString");
+            String[] placeholders = (String[]) customData.get("placeholders");
 
-                for (int i = 0; i < placeholders.length; i++) {
-                    String placeholder = "%v" + (i + 1);
-                    String sliderValue = formatDoubleStr(modules.getSlider(moduleName, placeholders[i]));
-                    displayString = displayString.replace(placeholder, sliderValue);
-                }
+            for (int i = 0; i < placeholders.length; i++) {
+                String placeholder = "%v" + (i + 1);
+                String sliderValue = formatDoubleStr(modules.getSlider(moduleName, placeholders[i]));
+                displayString = displayString.replace(placeholder, sliderValue);
+            }
 
-                overrideValue = displayString;
-                break;
+            overrideValue = displayString;
+            break;
 
-            case "strings":
-                String setting = (String) customData.get("setting");
-                String[] possibleValues = (String[]) customData.get("possibleValues");
+        case "strings":
+            String setting = (String) customData.get("setting");
+            String[] possibleValues = (String[]) customData.get("possibleValues");
 
-                int index = (int) modules.getSlider(moduleName, setting);
-                overrideValue = possibleValues[Math.min(index, possibleValues.length - 1)];
-                break;
-        }
+            int index = (int) modules.getSlider(moduleName, setting);
+            overrideValue = possibleValues[Math.min(index, possibleValues.length - 1)];
+            break;
     }
 
     Map<String, String> data = new HashMap<>();
@@ -188,10 +179,8 @@ void onPreUpdate() {
 
 long color1Edit = 0;
 long color2Edit = 0;
-int color1Red, color1Green, color1Blue, color2Red, color2Green, color2Blue;
 
 void updateSliders() {
-    theme = (int) modules.getSlider(scriptName, "Theme");
     colorMode = (int) modules.getSlider(scriptName, "Mode");
     waveSpeed = (float) modules.getSlider(scriptName, "Wave Speed");
     direction = (int) modules.getSlider(scriptName, "Direction");
@@ -200,56 +189,13 @@ void updateSliders() {
     animationMode = (int) modules.getSlider(scriptName, "Animations");
     background = new Color(0, 0, 0, (int) Math.floor(modules.getSlider(scriptName, "Background Opacity"))).getRGB();
     outlineMode = (int) modules.getSlider(scriptName, "Outline Mode");
-    lowercase = modules.getButton(scriptName, "Lowercase");
-    showCustomData = modules.getButton(scriptName, "Show custom data");
 
-    if (theme == 0) {
-        color1Red = (int) modules.getSlider(scriptName, "Color 1 - Red");
-        color1Green = (int) modules.getSlider(scriptName, "Color 1 - Green");
-        color1Blue = (int) modules.getSlider(scriptName, "Color 1 - Blue");
-        color2Red = (int) modules.getSlider(scriptName, "Color 2 - Red");
-        color2Green = (int) modules.getSlider(scriptName, "Color 2 - Green");
-        color2Blue = (int) modules.getSlider(scriptName, "Color 2 - Blue");
-    } else {
-        switch (theme) {
-            case 1:
-                color1Red = 255; color1Green = 200; color1Blue = 200;
-                color2Red = 243; color2Green = 58; color2Blue = 106;
-                break;
-            case 2:
-                color1Red = 99; color1Green = 249; color1Blue = 255;
-                color2Red = 255; color2Green = 104; color2Blue = 204;
-                break;
-            case 3:
-                color1Red = 231; color1Green = 39; color1Blue = 24;
-                color2Red = 245; color2Green = 173; color2Blue = 49;
-                break;
-            case 4:
-                color1Red = 215; color1Green = 166; color1Blue = 231;
-                color2Red = 211; color2Green = 90; color2Blue = 232;
-                break;
-            case 5:
-                color1Red = 255; color1Green = 215; color1Blue = 0;
-                color2Red = 240; color2Green = 159; color2Blue = 0;
-                break;
-            case 6:
-                color1Red = 240; color1Green = 240; color1Blue = 240;
-                color2Red = 110; color2Green = 110; color2Blue = 110;
-                break;
-            case 7:
-                color1Red = 125; color1Green = 204; color1Blue = 241;
-                color2Red = 30; color2Green = 71; color2Blue = 170;
-                break;
-            case 8:
-                color1Red = 160; color1Green = 230; color1Blue = 225;
-                color2Red = 15; color2Green = 190; color2Blue = 220;
-                break;
-            case 9:
-                color1Red = 17; color1Green = 192; color1Blue = 45;
-                color2Red = 201; color2Green = 234; color2Blue = 198;
-                break;
-        }
-    }
+    int color1Red = (int) modules.getSlider(scriptName, "Color 1 - Red");
+    int color1Green = (int) modules.getSlider(scriptName, "Color 1 - Green");
+    int color1Blue = (int) modules.getSlider(scriptName, "Color 1 - Blue");
+    int color2Red = (int) modules.getSlider(scriptName, "Color 2 - Red");
+    int color2Green = (int) modules.getSlider(scriptName, "Color 2 - Green");
+    int color2Blue = (int) modules.getSlider(scriptName, "Color 2 - Blue");
 
     if (staticColor == null || color1Red != staticColor.getRed() || color1Green != staticColor.getGreen() || color1Blue != staticColor.getBlue()) {
         if (staticColor != null) color1Edit = client.time() + 5000;
@@ -315,22 +261,20 @@ void onRenderTick(float partialTicks) {
 
         float scale = (float) mod.get("scale") * textScale;
         String textToDisplay = displayName + (displayValue.isEmpty() ? "" : " " + util.colorSymbol + "7" + displayValue);
-        if (lowercase) textToDisplay = textToDisplay.toLowerCase();
 
         float textWidth = render.getFontWidth(textToDisplay) * textScale;
         float scaledTextWidth = textWidth * scale;
         float finalXPosition;
 
         switch (animationMode) {
-            case 2: // Scale Center (Need formula to work with scaling)
-                finalXPosition = displayWidth - (scaledTextWidth / 2) - x - (textWidth / 2);
-                break;
-            case 1: // Scale Right
+            case 1: // Scale Center (Need formula to work with scaling)
+                /* finalXPosition = displayWidth - scaledTextWidth / 2 - x - textWidth / 2;
+                break; */
+            case 0: // Scale Right
                 finalXPosition = displayWidth - (scaledTextWidth / textScale) - x;
                 break;
             default:
-                finalXPosition = displayWidth - textWidth - x;
-                animationDuration = 0;
+                finalXPosition = displayWidth - scaledTextWidth - x;
                 break;
         }
 
@@ -343,7 +287,7 @@ void onRenderTick(float partialTicks) {
             client.print(val1 + " " + val2);
         } */
         render.rect(finalXPosition - scale, val1, finalXPosition + (scaledTextWidth / textScale), val2, background);
-        
+
         switch (colorMode) {
             case 0: // Static
                 color = staticColor.getRGB();
@@ -366,7 +310,7 @@ void onRenderTick(float partialTicks) {
 
         float lineOffset = lineGap * scale;
 
-        switch (outlineMode) {
+        switch(outlineMode) {
             case 1: // Left
                 render.line2D(finalXPosition - lineOffset, y, finalXPosition - lineOffset, y + backgroundHeight - 2 * scale, 2.5f * scale, color);
                 break;
@@ -386,8 +330,8 @@ void onRenderTick(float partialTicks) {
         previousWidth = scaledTextWidth / textScale;
         index += (direction == 0) ? 100 * scale : -100 * scale;
     }
-    
-    switch (outlineMode) {
+
+    switch(outlineMode) {
         case 2: // Right
             float posX = displayWidth - xOffset + lineGap * textScale;
             render.line2D( // Right
@@ -447,7 +391,7 @@ void updateEnabledModules() {
     for (Map<String, Object> mod : mods) {
         String moduleName = (String) mod.get("name");
         boolean currentlyVisible = (boolean) mod.get("visibility");
-        boolean shouldBeVisible = (boolean) mod.getOrDefault("moduleShown", false) && modules.isEnabled(moduleName);
+        boolean shouldBeVisible = (boolean) mod.getOrDefault("buttonEnabled", false) && modules.isEnabled(moduleName);
 
         if (currentlyVisible) {
             previousEnabledModules.add(moduleName);
@@ -506,8 +450,8 @@ float quadInOut(float t) {
 void updateButtonStates() {
     for (Map<String, Object> mod : mods) {
         String moduleName = (String) mod.get("name");
-        boolean isModuleShown = !modules.isHidden(moduleName);
-        mod.put("moduleShown", isModuleShown);
+        boolean isButtonEnabled = !modules.isHidden(moduleName);
+        mod.put("buttonEnabled", isButtonEnabled);
     }
 
     sortModules();
@@ -523,17 +467,12 @@ void sortModules() {
 
         if (customModuleData.containsKey(aName)) {
             Map<String, String> customDataA = customModuleData.get(aName);
-            aDisplayName = showCustomData ? customDataA.getOrDefault("alias", aName) + (customDataA.containsKey("overrideValue") ? " " + customDataA.get("overrideValue") : "") : customDataA.getOrDefault("alias", aName);
+            aDisplayName = customDataA.getOrDefault("alias", aName) + (customDataA.containsKey("overrideValue") ? ": " + customDataA.get("overrideValue") : "");
         }
 
         if (customModuleData.containsKey(bName)) {
             Map<String, String> customDataB = customModuleData.get(bName);
-            bDisplayName = showCustomData ? customDataB.getOrDefault("alias", bName) + (customDataB.containsKey("overrideValue") ? " " + customDataB.get("overrideValue") : "") : customDataB.getOrDefault("alias", bName);
-        }
-
-        if (lowercase) {
-            aDisplayName = aDisplayName.toLowerCase();
-            bDisplayName = bDisplayName.toLowerCase();
+            bDisplayName = customDataB.getOrDefault("alias", bName) + (customDataB.containsKey("overrideValue") ? ": " + customDataB.get("overrideValue") : "");
         }
 
         int widthA = render.getFontWidth(aDisplayName);
@@ -544,11 +483,5 @@ void sortModules() {
 }
 
 String formatDoubleStr(double val) {
-    String str;
-    if (val % 1 == 0) {
-        str = String.valueOf((int) val);
-    } else {
-        str = String.valueOf(val);
-    }
-    return str;
+    return val == (long) val ? Long.toString((long) val) : Double.toString(val);
 }
