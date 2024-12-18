@@ -267,9 +267,9 @@ void onRenderTick(float partialTicks) {
         float finalXPosition;
 
         switch (animationMode) {
-            case 1: // Scale Center (Need formula to work with scaling)
-                /* finalXPosition = displayWidth - scaledTextWidth / 2 - x - textWidth / 2;
-                break; */
+            case 1: // Scale Center (Needs recode to work with scaling)
+                finalXPosition = displayWidth - scaledTextWidth / 2 - x - textWidth / 2;
+                break;
             case 0: // Scale Right
                 finalXPosition = displayWidth - (scaledTextWidth / textScale) - x;
                 break;

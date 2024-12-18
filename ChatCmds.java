@@ -19,7 +19,9 @@ boolean onPacketSent(CPacket packet) {
     if (input.isEmpty()) return false;
 
     if (parts[0].equals(".help") || parts[0].equals(".list")) {
-        Map<String, List<String>> categories = modules.getCategories();
+        Map<String, List<String>> categories = new HashMap<>(modules.getCategories());
+        categories.remove("profiles");
+        categories.remove("fun");
         List<String> modulesList = new ArrayList<>();
 
         for (List<String> mods : categories.values()) {
