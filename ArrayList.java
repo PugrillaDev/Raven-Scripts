@@ -168,7 +168,7 @@ void onPreUpdate() {
     resetTicks++;
     int ticks = client.getPlayer().getTicksExisted();
     updateEnabledModules();
-    gap = (float) modules.getSlider(scriptName, "Gap");
+    gap = 1/* (float) modules.getSlider(scriptName, "Gap") */;
     lineGap = (float) modules.getSlider(scriptName, "Line Gap");
     moduleHeight = (float) render.getFontHeight() + gap;
     xOffset = (float) modules.getSlider(scriptName, "X-Offset");
@@ -241,7 +241,6 @@ void onRenderTick(float partialTicks) {
     updateAnimations();
 
     long index = 0;
-    float previousWidth = 0;
     float prevX = displayWidth;
     float prevY = yOffset;
     float firstY = y;
@@ -281,12 +280,12 @@ void onRenderTick(float partialTicks) {
                 break;
         }
 
-        float backgroundHeight = render.getFontHeight() * scale;
-        float backgroundOffset = index != 0 ? (gap + 1) * textScale : textScale;
+        float x1 = finalXPosition - scale;
+        float y1 = y;
+        float x2 = finalXPosition + (textWidth / textScale) * scale + scale;
+        float y2 = y + render.getFontHeight() * scale + scale;
 
-        float val1 = y - backgroundOffset;
-        float val2 = y + backgroundHeight - scale - (gap + 1) * (textScale - scale);
-        render.rect(finalXPosition - scale, val1, finalXPosition + (scaledTextWidth / textScale), val2, background);
+        render.rect(x1, y1, x2, y2, background);
 
         switch (colorMode) {
             case 0: // Static
@@ -303,56 +302,10 @@ void onRenderTick(float partialTicks) {
                 color = 0xFFFFFF;
         }
 
-        if (index == 0) firstY = y;
-        float ty = y - (moduleHeight * scale - render.getFontHeight() * scale);
-        float tyoff = (gap + 2) * (1 - scale);
-        render.text(lowercase ? textToDisplay.toLowerCase() : textToDisplay, finalXPosition, ty - tyoff, scale, color, true);
+        render.text(lowercase ? textToDisplay.toLowerCase() : textToDisplay, finalXPosition, y1 + scale, scale, color, true);
 
-        float lineOffset = lineGap * scale;
-
-        switch(outlineMode) {
-            case 1: // Left
-                render.line2D(finalXPosition - lineOffset, y, finalXPosition - lineOffset, y + backgroundHeight - 2 * scale, 2.5f * scale, color);
-                break;
-            case 3: // Full
-                /* if (index == 0) {
-                    render.line2D(finalXPosition - lineOffset, y - backgroundOffset - lineOffset, finalXPosition - lineOffset, y + backgroundHeight - scale + lineOffset, 2.5f * scale, color); //Left
-                    render.line2D(finalXPosition - lineOffset, y - backgroundOffset - lineOffset, finalXPosition + (scaledTextWidth / textScale) + lineOffset, y - backgroundOffset - lineOffset, 2.5f * scale, color); //TOP
-                } else {
-                    render.line2D(finalXPosition - lineOffset, y - backgroundOffset + lineOffset, finalXPosition - lineOffset, y + backgroundHeight - scale + lineOffset, 2.5f * scale, color); //up
-                    render.line2D(prevX, y - backgroundOffset + lineOffset, finalXPosition - lineOffset, y - backgroundOffset + lineOffset, 2.5f * scale, color); //down
-                }
-                break;   */
-        }
-        prevX = finalXPosition - lineOffset;
-        prevY = y + backgroundHeight * scale;
         y += moduleHeight * scale;
-        previousWidth = scaledTextWidth / textScale;
         index += (direction == 0) ? 100 * scale : -100 * scale;
-    }
-
-    switch(outlineMode) {
-        case 2: // Right
-            float posX = displayWidth - xOffset + lineGap * textScale;
-            render.line2D( // Right
-                posX, // x1
-                yOffset - 1 * textScale, // y1
-                posX, // x2
-                y - textScale - gap * textScale, // y2
-                2.5f * textScale,
-                color);
-            break;
-        case 3: // Full
-            /* render.line2D(prevX, y - 2 * textScale + lineGap * textScale, prevX + previousWidth + 1 * textScale, y - 2 * textScale + lineGap * textScale, 2.5f * textScale, color); // Bottom
-            posX = displayWidth - xOffset;
-            render.line2D( // Right
-                posX, // x1
-                yOffset - 1 * textScale, // y1
-                posX, // x2
-                y - textScale - gap * textScale, // y2
-                2.5f * textScale,
-                color);
-            break; */
     }
 }
 

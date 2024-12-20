@@ -5,11 +5,9 @@
 
 int open = 0;
 int delayTicks = 0;
-int delay = 0;
 
 void onLoad() {
     modules.registerSlider("Delay", " ticks", 0, 0, 10, 1);
-
     modules.registerButton("Iron", true);
     modules.registerButton("Gold", true);
     modules.registerButton("Diamonds", true);
@@ -19,7 +17,6 @@ void onLoad() {
 void onEnable() {
     open = 0;
     delayTicks = 0;
-    delay = (int) modules.getSlider(scriptName, "Delay");
     inventory.open();
 }
 
@@ -39,9 +36,8 @@ void onPreUpdate() {
     for (Map.Entry<Integer, ItemStack> entry : inv.entrySet()) {
         ItemStack item = entry.getValue();
         if (item == null || !tempitems.contains(item.name)) continue;
-
         inventory.click(entry.getKey(), 1, 4);
-        delayTicks = delay;
+        delayTicks = (int) modules.getSlider(scriptName, "Delay");
         if (delayTicks > 0) return;
     }
 
