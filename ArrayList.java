@@ -16,6 +16,7 @@ float gap, lineGap, textScale;
 float xOffset, yOffset;
 boolean firstTime = false;
 int resetTicks = 0;
+boolean lowercase;
 
 void onLoad() {
     setDataArray("KillAura", "", "Targets", new String[]{"Single", "Single", "Switch"});
@@ -39,13 +40,14 @@ void onLoad() {
     modules.registerSlider("Direction", "Direction", 1, new String[]{"Up", "Down"});
     modules.registerSlider("Wave Speed", "s", 5, 0.1, 10, 0.1);
 
-    modules.registerSlider("Animations", "", 0, new String[]{"Scale Right", util.color("Scale Center &cWIP")});
+    modules.registerSlider("Animations", "", 0, new String[]{"Scale Right", util.color("Scale Center")});
     modules.registerSlider("Animation Speed", "ms", 250, 0, 2000, 10);
 
+    modules.registerButton("Lowercase", false);
     modules.registerSlider("Gap", "", 1, 0, 5, 0.1);
     modules.registerSlider("Scale", "", 1, 0.5, 2, 0.1);
-    modules.registerSlider("X-Offset", "", 1, 0, 20, 1);
-    modules.registerSlider("Y-Offset", "", 1, 0, 20, 1);
+    modules.registerSlider("X-Offset", "", 1, 0, 50, 1);
+    modules.registerSlider("Y-Offset", "", 1, 0, 50, 1);
 
     modules.registerSlider("Outline Mode", "", 0, new String[]{util.colorSymbol + "cDisabled", "Left", "Right", util.color("Full &cWIP")});
     modules.registerSlider("Line Gap", "", 2, 0, 5, 0.1);
@@ -181,6 +183,7 @@ long color1Edit = 0;
 long color2Edit = 0;
 
 void updateSliders() {
+    lowercase = modules.getButton(scriptName, "Lowercase");
     colorMode = (int) modules.getSlider(scriptName, "Mode");
     waveSpeed = (float) modules.getSlider(scriptName, "Wave Speed");
     direction = (int) modules.getSlider(scriptName, "Direction");
@@ -267,8 +270,8 @@ void onRenderTick(float partialTicks) {
         float finalXPosition;
 
         switch (animationMode) {
-            case 1: // Scale Center (Needs recode to work with scaling)
-                finalXPosition = displayWidth - scaledTextWidth / 2 - x - textWidth / 2;
+            case 1: // Scale Center
+                finalXPosition = displayWidth - x - (textWidth / 2f) - ((textWidth * scale) / (2f * textScale));
                 break;
             case 0: // Scale Right
                 finalXPosition = displayWidth - (scaledTextWidth / textScale) - x;
@@ -283,9 +286,6 @@ void onRenderTick(float partialTicks) {
 
         float val1 = y - backgroundOffset;
         float val2 = y + backgroundHeight - scale - (gap + 1) * (textScale - scale);
-        /* if (scale != textScale) {
-            client.print(val1 + " " + val2);
-        } */
         render.rect(finalXPosition - scale, val1, finalXPosition + (scaledTextWidth / textScale), val2, background);
 
         switch (colorMode) {
@@ -306,7 +306,7 @@ void onRenderTick(float partialTicks) {
         if (index == 0) firstY = y;
         float ty = y - (moduleHeight * scale - render.getFontHeight() * scale);
         float tyoff = (gap + 2) * (1 - scale);
-        render.text(textToDisplay, finalXPosition, ty - tyoff, scale, color, true);
+        render.text(lowercase ? textToDisplay.toLowerCase() : textToDisplay, finalXPosition, ty - tyoff, scale, color, true);
 
         float lineOffset = lineGap * scale;
 
