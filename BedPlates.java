@@ -21,6 +21,7 @@ HashSet<String> invalid = new HashSet<>(Arrays.asList(
     "fire",
     "bed", // Beds
     "piston", "sticky_piston", "piston_extension", // Pistons
+    "log", "log2",
     "oak_stairs", "spruce_stairs", "birch_stairs", "jungle_stairs", "acacia_stairs", "dark_oak_stairs", "stone_stairs", "cobblestone_stairs", "brick_stairs", "stone_brick_stairs", "sandstone_stairs", "nether_brick_stairs", "quartz_stairs", "red_sandstone_stairs", // Stairs
     "redstone_wire", "daylight_sensor", // Redstone
     "wheat", "carrots", "potatoes", "beetroots", // Crops
@@ -98,7 +99,7 @@ void onPreUpdate() {
     autoScale = modules.getButton(scriptName, "Auto Scale");
     alignTop = modules.getButton(scriptName, "Align Top Center");
     mode = (int) modules.getSlider(scriptName, "Mode");
-    keybind = /* keybinds. */getKeyCode(keyNames[(int)modules.getSlider(scriptName, "Keybind")]);
+    keybind = /* keybinds. */keybinds.getKeyIndex(keyNames[(int)modules.getSlider(scriptName, "Keybind")]);
 
     Entity player = client.getPlayer();
     int ticks = player.getTicksExisted();
@@ -456,88 +457,4 @@ String addBlockToCount(Vec3 pos, Map<String, Integer> blockCounts) {
     String blockType = block.name + (block.variant != 0 && !invalid.contains(block.name) ? ":" + block.variant : "");
     blockCounts.put(blockType, blockCounts.getOrDefault(blockType, 0) + 1);
     return blockType;
-}
-
-int getKeyCode(String keyName) {
-    switch (keyName) {
-        case "0": return 11;
-        case "1": return 2;
-        case "2": return 3;
-        case "3": return 4;
-        case "4": return 5;
-        case "5": return 6;
-        case "6": return 7;
-        case "7": return 8;
-        case "8": return 9;
-        case "9": return 10;
-        case "A": return 30;
-        case "B": return 48;
-        case "C": return 46;
-        case "D": return 32;
-        case "E": return 18;
-        case "F": return 33;
-        case "G": return 34;
-        case "H": return 35;
-        case "I": return 23;
-        case "J": return 36;
-        case "K": return 37;
-        case "L": return 38;
-        case "M": return 50;
-        case "N": return 49;
-        case "O": return 24;
-        case "P": return 25;
-        case "Q": return 16;
-        case "R": return 19;
-        case "S": return 31;
-        case "T": return 20;
-        case "U": return 22;
-        case "V": return 47;
-        case "W": return 17;
-        case "X": return 45;
-        case "Y": return 21;
-        case "Z": return 44;
-        case "BACK": return 14;
-        case "CAPITAL": return 58;
-        case "COMMA": return 51;
-        case "DELETE": return 211;
-        case "DOWN": return 208;
-        case "END": return 207;
-        case "ESCAPE": return 1;
-        case "F1": return 59;
-        case "F2": return 60;
-        case "F3": return 61;
-        case "F4": return 62;
-        case "F5": return 63;
-        case "F6": return 64;
-        case "F7": return 65;
-        case "HOME": return 199;
-        case "INSERT": return 210;
-        case "LBRACKET": return 26;
-        case "LCONTROL": return 29;
-        case "LMENU": return 56;
-        case "LMETA": return 219;
-        case "LSHIFT": return 42;
-        case "MINUS": return 12;
-        case "NUMPAD0": return 82;
-        case "NUMPAD1": return 79;
-        case "NUMPAD2": return 80;
-        case "NUMPAD3": return 81;
-        case "NUMPAD4": return 75;
-        case "NUMPAD5": return 76;
-        case "NUMPAD6": return 77;
-        case "NUMPAD7": return 71;
-        case "NUMPAD8": return 72;
-        case "NUMPAD9": return 73;
-        case "PERIOD": return 52;
-        case "RETURN": return 28;
-        case "RCONTROL": return 157;
-        case "RSHIFT": return 54;
-        case "RBRACKET": return 27;
-        case "SEMICOLON": return 39;
-        case "SLASH": return 53;
-        case "SPACE": return 57;
-        case "TAB": return 15;
-        case "GRAVE": return 41;
-        default: return -1;
-    }
 }
