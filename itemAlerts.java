@@ -169,8 +169,8 @@ void doAlerts() {
     Entity playerEntity = client.getPlayer();
     long now = client.time();
     checkedPlayers.clear();
-    for (Entity player : client.getWorld().getPlayerEntities()) {
-        if (player == playerEntity) continue;
+    for (Entity player : world.getPlayerEntities()) {
+        if (player == playerEntity || player.isDead()) continue;
         NetworkPlayer nwp = player.getNetworkPlayer();
         String playerDisplay = player.getDisplayName();
         if (nwp == null || (!showTeammates && playerDisplay.startsWith(util.colorSymbol + myTeam)) || playerDisplay.startsWith(util.colorSymbol + "7")) continue;
@@ -342,7 +342,6 @@ String getColoredTeam(String colorCode) {
 }
 
 int getBedwarsStatus() {
-    World world = client.getWorld();
     List<String> sidebar = world.getScoreboard();
     if (sidebar == null) {
         if (world.getDimension().equals("The End")) {
@@ -367,7 +366,7 @@ int getBedwarsStatus() {
 
 void refreshTeams() {
     if (status != 3 || client.allowFlying()) return;
-    for (NetworkPlayer pla : client.getWorld().getNetworkPlayers()) { for (int i = 0; i < colorKeysArray.length; i++) {
+    for (NetworkPlayer pla : world.getNetworkPlayers()) { for (int i = 0; i < colorKeysArray.length; i++) {
         if (!pla.getName().equals(myName) || !pla.getDisplayName().startsWith(util.colorSymbol + colorKeysArray[i])) continue;
         myTeam = colorKeysArray[i];
     }}

@@ -129,9 +129,9 @@ Map<Integer, ItemStack> createCustomInventory() {
 }
 
 int getBedwarsStatus() {
-    List<String> sidebar = client.getWorld().getScoreboard();
+    List<String> sidebar = world.getScoreboard();
     if (sidebar == null) {
-        if (client.getWorld().getDimension().equals("The End")) {
+        if (world.getDimension().equals("The End")) {
             return 0;
         }
         return -1;

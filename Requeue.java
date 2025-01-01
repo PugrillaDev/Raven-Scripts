@@ -5,7 +5,7 @@ int ticks = 0;
 boolean scoreboard = false, check = false;
 
 void onPreUpdate() {
-    if (check && !scoreboard && client.getWorld().getScoreboard() != null) scoreboard = true;
+    if (check && !scoreboard && world.getScoreboard() != null) scoreboard = true;
     if (scoreboard && ++ticks == 20) {
         client.chat("/locraw");
     }

@@ -13,6 +13,7 @@ boolean lastPressed;
 boolean display = true;
 int keybind;
 int mode;
+HashSet<String> invalid = new HashSet<>(Arrays.asList("leaves", "water", "lava"));
 
 String[] keyNames = {
     "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
@@ -46,6 +47,8 @@ void onLoad() {
 ItemStack getStackFromName(String name) {
     return stacks.computeIfAbsent(name, key -> {
         try {
+            if (name.equals("water")) return new ItemStack("water_bucket");
+            if (name.equals("lava")) return new ItemStack("lava_bucket");
             return new ItemStack(key);
         } catch (Exception e) {
             return new ItemStack("barrier");
@@ -197,9 +200,8 @@ void updateBeds() {
     if (bedPositions.isEmpty()) return;
 
     Entity player = client.getPlayer();
-    World world = client.getWorld();
-    Vec3 pos = player.getPosition();
-    Vec3 lastPos = player.getLastPosition();
+    Vec3 pos = render.getPosition();
+    Vec3 lastPos = render.getPosition();
 
     client.async(() -> {
         for (Map<String, Object> bedData : bedPositions.values()) {
@@ -246,7 +248,6 @@ int getDelay(double distance) {
 
 void searchForBeds() {
     if (yLevels.isEmpty()) return;
-    World world = client.getWorld();
     List<Entity> players = world.getPlayerEntities();
     Vec3 myPos = client.getPlayer().getPosition();
 
@@ -302,7 +303,6 @@ void searchForBeds() {
 }
 
 void findYLevels() {
-    World world = client.getWorld();
     List<Entity> players = world.getPlayerEntities();
 
     client.async(() -> {
@@ -334,7 +334,6 @@ void findYLevels() {
 }
 
 List<String> getBedDefenseLayers(Vec3 position1, Vec3 position2) {
-    World world = client.getWorld();
     boolean facingZ = Math.abs(position2.z - position1.z) > Math.abs(position2.x - position1.x);
 
     List<String> finalLayers = new ArrayList<>();
@@ -374,14 +373,14 @@ List<String> getBedDefenseLayers(Vec3 position1, Vec3 position2) {
                         pos2 = new Vec3(startPos.x - (bedPart == 0 ? step1 : -step1), startPos.y + yOffset, startPos.z + step2);
                     }
 
-                    String blockType1 = addBlockToCount(world, pos1, blockCounts);
+                    String blockType1 = addBlockToCount(pos1, blockCounts);
                     if (blockType1.equals("air")) {
                         airBlocks++;
                     }
                     totalBlocks++;
 
                     if (!pos1.equals(pos2)) {
-                        String blockType2 = addBlockToCount(world, pos2, blockCounts);
+                        String blockType2 = addBlockToCount(pos2, blockCounts);
                         if (blockType2.equals("air")) {
                             airBlocks++;
                         }
@@ -417,8 +416,9 @@ List<String> getBedDefenseLayers(Vec3 position1, Vec3 position2) {
     return finalLayers;
 }
 
-String addBlockToCount(World world, Vec3 pos, Map<String, Integer> blockCounts) {
-    String blockType = world.getBlockAt((int)Math.floor(pos.x), (int)Math.floor(pos.y), (int)Math.floor(pos.z)).name;
+String addBlockToCount(Vec3 pos, Map<String, Integer> blockCounts) {
+    Block block = world.getBlockAt((int)Math.floor(pos.x), (int)Math.floor(pos.y), (int)Math.floor(pos.z));
+    String blockType = block.name + (block.variant != 0 && !invalid.contains(block.name) ? ":" + block.variant : "");
     blockCounts.put(blockType, blockCounts.getOrDefault(blockType, 0) + 1);
     return blockType;
 }

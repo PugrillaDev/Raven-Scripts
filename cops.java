@@ -235,7 +235,7 @@ boolean onPacketSent(CPacket packet) {
 }
 
 void getTeamColor() {
-    List<String> lines = client.getWorld().getScoreboard();
+    List<String> lines = world.getScoreboard();
     if (lines.size() < 13) return;
     String line = lines.get(12);
     if (!line.contains("Team: ")) return;
@@ -246,7 +246,7 @@ List<Entity> getClosestEntities(int numberOfEntities) {
     Entity player = client.getPlayer();
 
     List<Object[]> entityDistances = new ArrayList<>();
-    for (Entity entity : client.getWorld().getPlayerEntities()) {
+    for (Entity entity : world.getPlayerEntities()) {
         if ((entity.getUUID().charAt(14) != '4' && entity.getUUID().charAt(14) != '1') || entity.isInvisible() || entity.getNetworkPlayer() == null || entity == player || entity.getDisplayName().startsWith(teamColor)) continue;
         double distanceSq = player.getPosition().distanceToSq(entity.getPosition());
         entityDistances.add(new Object[]{entity, distanceSq});
@@ -275,7 +275,6 @@ double interpolate(double current, double old, double scale) {
 }
 
 Object[] canHitEntity(Entity p) {
-    World world = client.getWorld();
     Vec3[] boundingBox = getPredictedBoundingBox(p);
     Vec3 pos = boundingBox[0].offset(halfWidth, 0, halfWidth);
 
@@ -300,7 +299,6 @@ Object[] canHitEntity(Entity p) {
 }
 
 boolean isRaycastHit(Vec3 targetPos, Vec3[] boundingBox) {
-    World world = client.getWorld();
     float[] rots = getRotations(targetPos);
     List<Vec3> path = raycastPath(100, rots[0], rots[1], 0.2);
     for (Vec3 pos : path) {
@@ -317,7 +315,7 @@ Vec3[] getPredictedBoundingBox(Entity p) {
     Vec3 lposition = p.getLastPosition();
     Vec3 motion = position.offset(-lposition.x, -lposition.y, -lposition.z);
 
-    boolean inAir = client.getWorld().getBlockAt(position).name.equals("air");
+    boolean inAir = world.getBlockAt(position).name.equals("air");
     if (inAir) {
         motion.x *= 0.91;
         motion.z *= 0.91;

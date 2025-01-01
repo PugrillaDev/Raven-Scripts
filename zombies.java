@@ -86,7 +86,7 @@ void onPostPlayerInput() {
     Vec3 m = player.getPosition();
     double closest = Double.MAX_VALUE;
     Entity knockedPlayer = null;
-    for (Entity e : client.getWorld().getEntities()) {
+    for (Entity e : world.getEntities()) {
         String name = util.strip(e.getDisplayName());
         if (!name.contains("HOLD SNEAK TO REVIVE!") && !name.contains("REVIVING...")) continue;
         double dist = e.getPosition().distanceToSq(m);

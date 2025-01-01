@@ -38,7 +38,7 @@ void onPreMotion(PlayerState state) {
     skullList.clear();
     boolean shouldRotate = modules.getButton(scriptName, "rotations");
 
-    for (TileEntity tileEntity : client.getWorld().getTileEntities()) {
+    for (TileEntity tileEntity : world.getTileEntities()) {
         if (!tileEntity.name.equals("skull")) continue;
 
         Object[] skullData = tileEntity.getSkullData();
@@ -127,7 +127,7 @@ void onDisable() {
 }
 
 boolean checkStatus() {
-    List<String> sidebar = client.getWorld().getScoreboard();
+    List<String> sidebar = world.getScoreboard();
     return sidebar != null && util.strip(sidebar.get(0)).startsWith("HALLOWEEN SIMULATOR");
 }
 

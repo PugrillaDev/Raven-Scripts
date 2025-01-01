@@ -62,13 +62,12 @@ void onLoad() {
     refreshkbs();
 }
 
-void onGuiUpdate(String name, boolean opened) {
-    if (!opened) {
-        clickList.clear();
+void onPreUpdate() {
+    String guiName = client.getScreen();
+
+    if (!guiName.equals("GuiChest")) {
         return;
     }
-
-    if (!name.equals("GuiChest")) return;
 
     refreshkbs();
     Map<Integer, ItemStack> inv = createCustomInventory();

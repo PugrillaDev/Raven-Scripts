@@ -135,7 +135,6 @@ boolean isGood(String nick) {
 }
 
 int getLobbyStatus() {
-    World world = client.getWorld();
     List<String> sidebar = world.getScoreboard();
     if (sidebar == null) {
         if (world.getDimension().equals("The End")) {

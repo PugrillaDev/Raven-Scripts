@@ -162,7 +162,7 @@ List<Entity> getClosestEntities(int amount) {
     String myTeam = player.getNetworkPlayer() != null ? player.getNetworkPlayer().getDisplayName().substring(0, 2) : player.getDisplayName().substring(0, 2);
 
     List<Object[]> entityDistances = new ArrayList<>();
-    for (Entity entity : client.getWorld().getPlayerEntities()) {
+    for (Entity entity : world.getPlayerEntities()) {
         String d = entity.getDisplayName();
         char u = entity.getUUID().charAt(14);
         if (entity == player || entity.getNetworkPlayer() == null || (u != '4' && u != '1') || d.startsWith(myTeam) || (entity.isInvisible() && d.startsWith(util.colorSymbol + "c") && !d.contains(" "))) continue;
@@ -188,7 +188,6 @@ Object[] canHitEntity(Entity p) {
     double range = getCurrentWeaponRange();
     if (range == 0 || p.getPosition().distanceTo(client.getPlayer().getPosition()) > range) return new Object[] { false };
 
-    World world = client.getWorld();
     Vec3[] boundingBox = getPredictedBoundingBox(p);
     Vec3 pos = boundingBox[0].offset(halfWidth, 0, halfWidth);
 
@@ -213,7 +212,6 @@ Object[] canHitEntity(Entity p) {
 }
 
 boolean isRaycastHit(Vec3 targetPos, Vec3[] boundingBox, double range) {
-    World world = client.getWorld();
     float[] rots = getRotations(targetPos);
     List<Vec3> path = raycastPath(range, rots[0], rots[1], 0.2);
     for (Vec3 pos : path) {
@@ -244,7 +242,7 @@ Vec3[] getPredictedBoundingBox(Entity p) {
     Vec3 lposition = p.getLastPosition();
     Vec3 motion = position.offset(-lposition.x, -lposition.y, -lposition.z);
 
-    boolean inAir = client.getWorld().getBlockAt(position).name.equals("air");
+    boolean inAir = world.getBlockAt(position).name.equals("air");
     if (inAir) {
         motion.x *= 0.91;
         motion.z *= 0.91;
@@ -303,7 +301,6 @@ float[] getRotations(Vec3 point) {
 }
 
 int getBedwarsStatus() {
-    World world = client.getWorld();
     List<String> sidebar = world.getScoreboard();
     if (sidebar == null) {
         if (world.getDimension().equals("The End")) {

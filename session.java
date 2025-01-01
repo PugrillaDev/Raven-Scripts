@@ -55,8 +55,8 @@ void onLoad() {
     modules.registerButton("Session Time", true);
     modules.registerButton("Debug", false);
 
-    modules.registerSlider("X Position", "", client.getDisplaySize()[0], 0, client.getDisplaySize()[0], 0.1);
-    modules.registerSlider("Y Position", "", client.getDisplaySize()[1], 0, client.getDisplaySize()[1], 0.1);
+    modules.registerSlider("X Position", "", 1000, 0, 1000, 0.1);
+    modules.registerSlider("Y Position", "", 1000, 0, 1000, 0.1);
 }
 
 void onPreUpdate() {
@@ -103,7 +103,7 @@ void onPreUpdate() {
         debug = modules.getButton(scriptName, "Debug");
         if (status == 3) {
             refreshTeams(myName);
-        } else if (status == 1) { for (Entity en : client.getWorld().getEntities()) {
+        } else if (status == 1) { for (Entity en : world.getEntities()) {
             if (!en.type.equals("EntityArmorStand")) continue;
             String name = util.strip(en.getName());
             if (!name.startsWith("Current Winstreak: ")) continue;
@@ -362,7 +362,7 @@ boolean didPlayerGetKill(String playerName, String message) {
 
 void refreshTeams(String playerName) {
     if (client.allowFlying()) return;
-    for (NetworkPlayer pla : client.getWorld().getNetworkPlayers()) { for (int i = 0; i < colorKeysArray.length; i++) {
+    for (NetworkPlayer pla : world.getNetworkPlayers()) { for (int i = 0; i < colorKeysArray.length; i++) {
         if (pla.getName().equals(myName) && pla.getDisplayName().startsWith(util.color("&" + colorKeysArray[i]))) {
             myTeam = colorsArray[i];
         }
@@ -370,7 +370,6 @@ void refreshTeams(String playerName) {
 }
 
 int getBedwarsStatus() {
-    World world = client.getWorld();
     List<String> sidebar = world.getScoreboard();
     if (sidebar == null) {
         if (world.getDimension().equals("The End")) {

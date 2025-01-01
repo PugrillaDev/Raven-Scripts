@@ -764,7 +764,7 @@ void onPreUpdate() {
     if (status > 1) {
         HashSet<String> currentEntityUUIDs = new HashSet<>();
         final int threshold = (int) modules.getSlider(scriptName, "Encounters Timeout (mins)") * 60000;
-        for (NetworkPlayer pla : client.getWorld().getNetworkPlayers()) {
+        for (NetworkPlayer pla : world.getNetworkPlayers()) {
             final long currentTime = client.time();
             final String uuid = pla.getUUID().replace("-", "");
             final String displayName = pla.getDisplayName();
@@ -1298,7 +1298,6 @@ Object[] get(String url, int timeout) {
 }
 
 int getBedwarsStatus() {
-    World world = client.getWorld();
     List<String> sidebar = world.getScoreboard();
     if (sidebar == null) {
         if (world.getDimension().equals("The End")) {
@@ -1392,7 +1391,7 @@ boolean isBot(NetworkPlayer pla) {
 }
 
 int timeUntilStart() {
-    List<String> scoreboard = client.getWorld().getScoreboard();
+    List<String> scoreboard = world.getScoreboard();
     if (scoreboard == null || scoreboard.size() < 7) return -1;
     String line = util.strip(scoreboard.get(6));
     if (!line.startsWith("Starting in ")) {

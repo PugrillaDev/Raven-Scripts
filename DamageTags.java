@@ -27,10 +27,10 @@ void onPreUpdate() {
     colorMode = (int) modules.getSlider(scriptName, "Color");
     showHealing = modules.getButton(scriptName, "Show Healing");
     showDamage = modules.getButton(scriptName, "Show Damage");
-    Vec3 me = render.getPosition().offset(0, 1.62, 0);
+    Vec3 me = render.getPosition();
     long now = client.time();
 
-    for (Entity p : client.getWorld().getPlayerEntities()) {
+    for (Entity p : world.getPlayerEntities()) {
         String entityId = String.valueOf(p.entityId) + p.getUUID();
 
         float hp = p.getHealth() + p.getAbsorption();
@@ -38,9 +38,10 @@ void onPreUpdate() {
         float lastHp = playerHealth.getOrDefault(entityId, hp);
         float lastHealth = lastHp / (mode == 0 ? 2 : 1);
 
+        if (p.isDead()) continue;
         playerHealth.put(entityId, hp);
 
-        if (p.isDead() || p.getTicksExisted() < 2 || health == lastHealth || (!showDamage && health < lastHealth) || (!showHealing && health > lastHealth)) continue;
+        if (p.getTicksExisted() < 2 || health == lastHealth || (!showDamage && health < lastHealth) || (!showHealing && health > lastHealth)) continue;
 
         float difference = health - lastHealth;
         String renderHealth;
@@ -52,6 +53,8 @@ void onPreUpdate() {
         } else {
             renderHealth = formatDoubleStr(util.round(Math.abs((double) difference), 1));
         }
+
+        if (renderHealth.endsWith("0")) continue;
 
         Vec3 position = p.getPosition().offset(0, yOffset, 0);
 

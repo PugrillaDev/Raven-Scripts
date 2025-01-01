@@ -81,7 +81,7 @@ void onPreUpdate() {
     String myName = player.getNetworkPlayer() != null ? player.getNetworkPlayer().getDisplayName() : player.getDisplayName();
     if (!player.isInvisible() && myName.contains(" ")) myTeamColor = myName.substring(0, 2);
 
-    for (Entity p : client.getWorld().getPlayerEntities()) {
+    for (Entity p : world.getPlayerEntities()) {
         String uuid = p.getUUID();
         if (p == player || p.getNetworkPlayer() == null || (uuid.charAt(14) != '4' && uuid.charAt(14) != '1') || p.getDisplayName().startsWith(myTeamColor) || p.getDisplayName().startsWith(defaultColor)) continue;
 
@@ -105,12 +105,12 @@ void onPreUpdate() {
     }
 
     if (player.getTicksExisted() % 5 == 0) {
-        for (Entity en : client.getWorld().getEntities()) {
+        for (Entity en : world.getEntities()) {
             if (!blacklistedEntities.contains(en.type)) continue;
 
             double closest = Double.MAX_VALUE;
             Entity closestPlayer = null;
-            for (Entity p : client.getWorld().getPlayerEntities()) {
+            for (Entity p : world.getPlayerEntities()) {
                 String uuid = p.getUUID();
                 if (p == player || p.getNetworkPlayer() == null || (uuid.charAt(14) != '4' && uuid.charAt(14) != '1') || p.getDisplayName().startsWith(myTeamColor) || p.getDisplayName().startsWith(defaultColor)) continue;
                 double dist = p.getPosition().distanceToSq(en.getPosition());
@@ -147,7 +147,7 @@ void onWorldJoin(Entity en) {
     if (blacklistedEntities.contains(en.type)) {
         double closest = Double.MAX_VALUE;
         Entity closestPlayer = null;
-        for (Entity p : client.getWorld().getPlayerEntities()) {
+        for (Entity p : world.getPlayerEntities()) {
             String uuid = p.getUUID();
             if (p == player || p.getNetworkPlayer() == null || (uuid.charAt(14) != '4' && uuid.charAt(14) != '1') || p.getDisplayName().startsWith(myTeamColor) || p.getDisplayName().startsWith(defaultColor)) continue;
             double dist = p.getPosition().distanceToSq(en.getPosition());
@@ -183,7 +183,6 @@ Vec3 findBed(int range) {
     int startX = (int)playerPos.x - range;
     int startY = (int)playerPos.y - range;
     int startZ = (int)playerPos.z - range;
-    World world = client.getWorld();
 
     for (int x = startX; x <= playerPos.x + range; x++) { for (int y = startY; y <= playerPos.y + range; y++) { for (int z = startZ; z <= playerPos.z + range; z++) {
         Block block = world.getBlockAt(new Vec3(x, y, z));
@@ -195,7 +194,6 @@ Vec3 findBed(int range) {
 }
 
 int getBedwarsStatus() {
-    World world = client.getWorld();
     List<String> sidebar = world.getScoreboard();
     if (sidebar == null) {
         if (world.getDimension().equals("The End")) {

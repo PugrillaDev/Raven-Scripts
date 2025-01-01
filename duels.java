@@ -120,7 +120,7 @@ boolean onPacketReceived(SPacket packet) {
 HashSet<String> getTeamsMapPlayers() {
     HashSet<String> players = new HashSet<>(); 
 
-    Map<String, List<String>> teamMap = client.getWorld().getTeams();
+    Map<String, List<String>> teamMap = world.getTeams();
     for (String key : teamMap.keySet()) {
         List<String> list = teamMap.get(key);
         for (String ign : list) {
@@ -858,9 +858,9 @@ String getPrestigeColor(int number) {
 
 
 int getDuelsStatus() {
-    List<String> sidebar = client.getWorld().getScoreboard();
+    List<String> sidebar = world.getScoreboard();
     if (sidebar == null) {
-        if (client.getWorld().getDimension().equals("The End")) {
+        if (world.getDimension().equals("The End")) {
             return 0;
         }
         return -1;
