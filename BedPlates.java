@@ -15,26 +15,16 @@ int keybind;
 int mode;
 HashSet<String> invalid = new HashSet<>(Arrays.asList(
     "leaves", "water", "lava", 
-    "oak_log", "spruce_log", "birch_log", "jungle_log", "acacia_log", "dark_oak_log", // Logs
-    "oak_planks", "spruce_planks", "birch_planks", "jungle_planks", "acacia_planks", "dark_oak_planks", // Wood planks
-    "stone", "grass", "dirt", "coarse_dirt", "podzol", // Stone and dirt
-    "oak_sapling", "spruce_sapling", "birch_sapling", "jungle_sapling", "acacia_sapling", "dark_oak_sapling", // Saplings
-    "sand", "red_sand", // Sand
-    "gravel", 
     "oak_leaves", "spruce_leaves", "birch_leaves", "jungle_leaves", "acacia_leaves", "dark_oak_leaves", // Leaves
-    "wool", "stained_glass", "carpet", // Wool and similar
     "torch", "redstone_torch", // Torches
-    "oak_slab", "spruce_slab", "birch_slab", "jungle_slab", "acacia_slab", "dark_oak_slab", // Wooden slabs
-    "stone_slab", "cobblestone_slab", "sandstone_slab", "brick_slab", "stone_brick_slab", "nether_brick_slab", "quartz_slab", // Stone slabs
+    "wooden_slab", "stone_slab", "stone_slab2", "double_wooden_slab", "double_stone_slab", // Wooden slabs
     "fire",
-    "sandstone", "chiseled_sandstone", "smooth_sandstone", // Sandstone
     "bed", // Beds
     "piston", "sticky_piston", "piston_extension", // Pistons
-    "oak_stairs", "spruce_stairs", "birch_stairs", "jungle_stairs", "acacia_stairs", "dark_oak_stairs", "stone_brick_stairs", "sandstone_stairs", "quartz_stairs", "brick_stairs", // Stairs
+    "oak_stairs", "spruce_stairs", "birch_stairs", "jungle_stairs", "acacia_stairs", "dark_oak_stairs", "stone_stairs", "cobblestone_stairs", "brick_stairs", "stone_brick_stairs", "sandstone_stairs", "nether_brick_stairs", "quartz_stairs", "red_sandstone_stairs", // Stairs
     "redstone_wire", "daylight_sensor", // Redstone
     "wheat", "carrots", "potatoes", "beetroots", // Crops
     "farmland",
-    "banner", // Banners
     "oak_door", "spruce_door", "birch_door", "jungle_door", "acacia_door", "dark_oak_door", // Doors
     "rails", "activator_rail", "detector_rail", "powered_rail", // Rails
     "ladder", "furnace", "chest", "trapped_chest", // Ladders and containers
@@ -52,19 +42,10 @@ HashSet<String> invalid = new HashSet<>(Arrays.asList(
     "prismarine", "prismarine_bricks", "dark_prismarine", // Prismarine
     "sponge", 
     "brown_mushroom_block", "red_mushroom_block", // Mushroom blocks
-    "pumpkin_stem", "melon_stem", // Stems
-    "vines", 
-    "fence_gate", // Fences
-    "nether_wart", // Nether crops
-    "brewing_stand", "cauldron", // Brewing
-    "nether_portal", "end_portal_frame", // Portals
-    "cocoa", 
-    "tripwire_hook", "tripwire", // Redstone traps
     "cobblestone_wall", // Walls
     "flower_pot", // Decoration
     "skull", // Heads
     "quartz_block", "quartz_pillar", "chiseled_quartz_block", // Quartz
-    "coal_block", 
     "anvil" // Utility
 ));
 
@@ -102,6 +83,7 @@ ItemStack getStackFromName(String name) {
         try {
             if (name.equals("water")) return new ItemStack("water_bucket");
             if (name.equals("lava")) return new ItemStack("lava_bucket");
+            if (name.equals("fire")) return new ItemStack("flint_and_steel");
             return new ItemStack(key);
         } catch (Exception e) {
             return new ItemStack("barrier");
