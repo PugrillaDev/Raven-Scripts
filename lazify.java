@@ -882,7 +882,7 @@ void onRenderTick(float partialTicks) {
         float x = Float.parseFloat(column.get("position").toString());
 
         if (!statKey.equals(playerKey)) x += (maxWidth - width) / 2;
-        render.text(title, x, startY + offsetY, textScale, columnTitles, true);
+        render.text2d(title, x, startY + offsetY, textScale, columnTitles, true);
     }
 
     float y = startY + lineHeight + 5f * textScale;
@@ -966,7 +966,7 @@ void onRenderTick(float partialTicks) {
                 x += (maxWidth - textWidth) / 2f;
             }
 
-            render.text(text, x, y, textScale, -1, true);
+            render.text2d(text, x, y, textScale, -1, true);
         }
         y += lineHeight;
     }}

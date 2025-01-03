@@ -266,7 +266,7 @@ void onRenderTick(float partialTicks) {
         }
         float rowWidth = render.getFontWidth(row) * scale;
         float x = endX - rowWidth - 2f * scale;
-        render.text(row, x, y, scale, yellow, shadow);
+        render.text2d(row, x, y, scale, yellow, shadow);
         y += lineHeight;
     }
 }

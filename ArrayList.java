@@ -302,7 +302,7 @@ void onRenderTick(float partialTicks) {
                 color = 0xFFFFFF;
         }
 
-        render.text(lowercase ? textToDisplay.toLowerCase() : textToDisplay, finalXPosition, y1 + scale, scale, color, true);
+        render.text2d(lowercase ? textToDisplay.toLowerCase() : textToDisplay, finalXPosition, y1 + scale, scale, color, true);
 
         y += moduleHeight * scale;
         index += (direction == 0) ? 100 * scale : -100 * scale;

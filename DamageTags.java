@@ -135,7 +135,7 @@ void onRenderTick(float partialTicks) {
         float screenX = (float) screenPos.x - textWidth / 2f;
         float screenY = (float) screenPos.y - textHeight / 2f;
 
-        render.text(health, screenX, screenY, scale, color, true);
+        render.text2d(health, screenX, screenY, scale, color, true);
     }
 }
 

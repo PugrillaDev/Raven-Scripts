@@ -291,8 +291,8 @@ void onRenderTick(float partialTicks) {
         render.line2D(adjustedX, adjustedY, adjustedX + adjustedWidth, adjustedY, adjustedLineWidth, lineColor);
 
         // text
-        render.text(title, adjustedX + padding * clickScale, adjustedY + padding * clickScale, adjustedScale, themeColor, true);
-        render.text(message, adjustedX + padding * clickScale, adjustedY + scaledFontHeight * clickScale + padding * 2 * clickScale, adjustedScale, themeColor, true);
+        render.text2d(title, adjustedX + padding * clickScale, adjustedY + padding * clickScale, adjustedScale, themeColor, true);
+        render.text2d(message, adjustedX + padding * clickScale, adjustedY + scaledFontHeight * clickScale + padding * 2 * clickScale, adjustedScale, themeColor, true);
 
         offsetY += height + padding;
     }

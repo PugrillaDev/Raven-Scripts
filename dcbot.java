@@ -131,7 +131,7 @@ void onPreUpdate() {
 void onRenderTick(float partialTicks) {
     if (!client.getScreen().isEmpty() || bedDistance < tooFarRange * tooFarRange) return;
     int[] displaySize = client.getDisplaySize();
-    render.text(farmsg, (displaySize[0] / 2) - (farwidth / 2), displaySize[1] - offset, 1, 0, true);
+    render.text2d(farmsg, (displaySize[0] / 2) - (farwidth / 2), displaySize[1] - offset, 1, 0, true);
 }
 
 void onWorldJoin(Entity en) {
