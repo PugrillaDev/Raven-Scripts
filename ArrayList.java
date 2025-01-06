@@ -12,7 +12,7 @@ float moduleHeight;
 int colorMode;
 float waveSpeed;
 int background, direction, animationMode, outlineMode, color;
-float gap, lineGap, textScale;
+float gap = 1, lineGap, textScale;
 float xOffset, yOffset;
 boolean firstTime = false;
 int resetTicks = 0;
@@ -40,16 +40,15 @@ void onLoad() {
     modules.registerSlider("Direction", "Direction", 1, new String[]{"Up", "Down"});
     modules.registerSlider("Wave Speed", "s", 5, 0.1, 10, 0.1);
 
-    modules.registerSlider("Animations", "", 0, new String[]{"Scale Right", util.color("Scale Center")});
+    modules.registerSlider("Animations", "", 0, new String[]{"Scale Right", "Scale Center"});
     modules.registerSlider("Animation Speed", "ms", 250, 0, 2000, 10);
 
     modules.registerButton("Lowercase", false);
-    modules.registerSlider("Gap", "", 1, 0, 5, 0.1);
     modules.registerSlider("Scale", "", 1, 0.5, 2, 0.1);
     modules.registerSlider("X-Offset", "", 1, 0, 50, 1);
     modules.registerSlider("Y-Offset", "", 1, 0, 50, 1);
 
-    modules.registerSlider("Outline Mode", "", 0, new String[]{util.colorSymbol + "cDisabled", "Left", "Right", util.color("Full &cWIP")});
+    modules.registerSlider("Outline Mode", "", 0, new String[]{util.color("&cDisabled"), util.color("Left &c(WIP)"), "Right", util.color("Full &c(WIP)")});
     modules.registerSlider("Line Gap", "", 2, 0, 5, 0.1);
 }
 
@@ -168,7 +167,6 @@ void onPreUpdate() {
     resetTicks++;
     int ticks = client.getPlayer().getTicksExisted();
     updateEnabledModules();
-    gap = 1/* (float) modules.getSlider(scriptName, "Gap") */;
     lineGap = (float) modules.getSlider(scriptName, "Line Gap");
     moduleHeight = (float) render.getFontHeight() + gap;
     xOffset = (float) modules.getSlider(scriptName, "X-Offset");
@@ -264,7 +262,7 @@ void onRenderTick(float partialTicks) {
         float scale = (float) mod.get("scale") * textScale;
         String textToDisplay = displayName + (displayValue.isEmpty() ? "" : " " + util.colorSymbol + "7" + displayValue);
 
-        float textWidth = render.getFontWidth(textToDisplay) * textScale;
+        float textWidth = (float) render.getFontWidth(textToDisplay) * textScale;
         float scaledTextWidth = textWidth * scale;
         float finalXPosition;
 
@@ -273,7 +271,7 @@ void onRenderTick(float partialTicks) {
                 finalXPosition = displayWidth - x - (textWidth / 2f) - ((textWidth * scale) / (2f * textScale));
                 break;
             case 0: // Scale Right
-                finalXPosition = displayWidth - (scaledTextWidth / textScale) - x;
+                finalXPosition = displayWidth - (scaledTextWidth / textScale) - x + (1 - scale);
                 break;
             default:
                 finalXPosition = displayWidth - scaledTextWidth - x;
@@ -303,6 +301,15 @@ void onRenderTick(float partialTicks) {
         }
 
         render.text2d(lowercase ? textToDisplay.toLowerCase() : textToDisplay, finalXPosition, y1 + scale, scale, color, true);
+
+        if (outlineMode == 2) {
+            // Fix the line position and only animate the height
+            float outlineX = displayWidth - x + lineGap * textScale; // Fixed horizontal position
+            float outlineY1 = y1;
+            float outlineY2 = y2;
+
+            render.rect(outlineX, outlineY1, outlineX + textScale, outlineY2, color);
+        }
 
         y += moduleHeight * scale;
         index += (direction == 0) ? 100 * scale : -100 * scale;
