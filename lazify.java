@@ -4,6 +4,7 @@
 */
 
 String hypixelKey;
+String pugKey;
 
 final String useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -19,7 +20,7 @@ final static String starKey = "star",
 final static String starValue = "starvalue",
                     fkdrValue = "fkdrvalue",
                     indexValue = "indexvalue",
-                    pingValue = "indexvalue",
+                    pingValue = "pingvalue",
                     sessionValue = "sessionvalue",
                     winstreakValue = "winstreakvalue";
 
@@ -40,7 +41,7 @@ void onLoad() {
     modules.registerSlider("Winstreak Mode", "", 0, new String[] { "Overall", "Solos", "Doubles", "Threes", "Fours", "4v4" });
     addColumn("Tags", "Tags", tagsKey);
     addColumn("Session", "Online", sessionKey);
-    //addColumn("Ping", "[PING]", pingKey);
+    addColumn("Ping", "Ping", pingKey);
 
     /*
     - add sorting options here
@@ -53,7 +54,7 @@ void onLoad() {
     addSortingOption("Index", indexValue);
     addSortingOption("Winstreak", winstreakValue);
     addSortingOption("Join Time", joinValue);
-    //addSortingOption("Ping", pingValue);
+    addSortingOption("Ping", pingValue);
 
     /* 
     - add tags in the order which they will be displayed 
@@ -70,11 +71,14 @@ void onLoad() {
 
 void onPlayerAdd(String uuid) {
     handlePlayerStats(uuid, getLobbyId());
+    handlePlayerPing(uuid, getLobbyId());
 }
 
 void onManualPlayerAdd(String uuid) {
     statsCache.remove(uuid);
+    pingCache.remove(uuid);
     handlePlayerStats(uuid, getLobbyId());
+    handlePlayerPing(uuid, getLobbyId());
 }
 
 void onWorldSwap() {
@@ -223,6 +227,83 @@ Map<String, Object> parseStats(Json jsonData, String uuid) {
     }
 
     return stats;
+}
+
+void handlePlayerPing(String uuid, String lobby) {
+    Map<String, Object> cachedPing = pingCache.get(uuid);
+    if (cachedPing == null || client.time() > (long) cachedPing.get("cachetime")) {
+        if (cachedPing != null) pingCache.remove(uuid);
+        client.async(() -> {
+            Map<String, Object> playerPing = new ConcurrentHashMap<>();
+            try {
+                String url = "https://privatemethod.xyz/api/lobby/ping?key=" + pugKey + "&uuid=" + uuid;
+                Object[] playerPingRequest = get(url, 3000);
+                if ((int)playerPingRequest[1] == 200) {
+                    playerPing = parsePing((Json)playerPingRequest[0], uuid);
+                } else {
+                    client.print(getChatPrefix() + " &eHTTP Error &3" + playerPingRequest[1] + " &ewhile getting ping.");
+                    client.log("HTTP Error " + playerPingRequest[1] + " getting ping on " + uuid);
+                    playerPing.put("error", true);
+                }
+
+            } catch (Exception e) {
+                client.print(getChatPrefix() + " &eRuntime error while getting ping.");
+                client.log("Runtime error getting ping on " + uuid + ": " + e);
+                playerPing.put("error", true);
+            }
+
+            if (isInOverlay(uuid) && !hasChangedLobby(lobby)) addToOverlay(uuid, playerPing);
+        });
+    } else {
+        addToOverlay(uuid, cachedPing);
+    }
+}
+
+Map<String, Object> parsePing(Json jsonData, String uuid) {
+    Map<String, Object> pingdata = new ConcurrentHashMap<>();
+
+    try {
+        Json data = jsonData.object();
+        List<Json> array = data.array("data");
+        if (array.size() == 0) {
+            pingdata.put("ping", "");
+            return pingdata;
+        }
+
+        Json endObject = array.get(0);
+        int ping = Integer.parseInt(endObject.get("avg"));
+
+        String coloredPing = getPingColor(String.valueOf(ping));
+        pingdata.put(pingValue, ping);
+        pingdata.put(pingKey, coloredPing);
+        pingdata.put("cachetime", client.time() + 1800000);
+        pingCache.put(uuid, pingdata);
+    } catch (Exception e) {
+        client.log("Error in parsePing function: " + e);
+        client.print("&eError detected. Please check &3latest.log&e.");
+    }
+
+    return pingdata;
+}
+
+String getPingColor(String ping) {
+    if (ping.isEmpty()) {
+        return "";
+    }
+
+    int realping = Integer.parseInt(ping);
+    
+    if (realping > 300) {
+        return util.colorSymbol + '4' + realping;
+    } else if (realping > 200) {
+        return util.colorSymbol + 'c' + realping;
+    } else if (realping > 170) {
+        return util.colorSymbol + 'e' + realping;
+    } else if (realping > 120) {
+        return util.colorSymbol + '2' + realping;
+    } else {
+        return util.colorSymbol + 'a' + realping;
+    }
 }
 
 String parseWinstreakMode(int i) {
