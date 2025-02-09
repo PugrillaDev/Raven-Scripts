@@ -1,15 +1,13 @@
 int disableTicks;
-int lastAttack;
-double closest;
-boolean toggle;
-double startFallHeight;
 Vec3 lastPosition;
-boolean fell;
+double closest;
+double startFallHeight;
+boolean toggle;
 
 void onLoad() {
     modules.registerSlider("Latency", "ms", 300, 0, 500, 50);
     modules.registerSlider("Activation Distance", " blocks", 13, 0, 20, 1);
-    modules.registerSlider("Hurttime", "", 0, 0, 10, 1);
+    modules.registerSlider("Hurttime", "", 2, 0, 10, 1);
     modules.registerButton("Check Team", true);
     modules.registerButton("Check Ping", true);
     modules.registerButton("Check Weapon", true);
@@ -81,14 +79,14 @@ void onPreUpdate() {
         if (held != null) {
             holdingWeapon = held.type.equals("ItemSword") && modules.getButton(scriptName, "Swords") ||
                             held.name.equals("stick") && modules.getButton(scriptName, "Stick") || 
-                            held.name.equals("fishing_rod") && modules.getButton(scriptName, "Fishing Rod");
+                            held.name.equals("fishing_rod") && modules.getButton(scriptName, "Fishing Rod"); // Weapon check
         }
         correctHeldItem = holdingWeapon;
     }
 
-    toggle = correctHeldItem && disableTicks <= 0 && client.getScreen().isEmpty() && closest != -1 && closest < boxSize * boxSize;
+    toggle = correctHeldItem && disableTicks < 0 && client.getScreen().isEmpty() && closest != -1 && closest < boxSize * boxSize;
 
-    if (player.getHurtTime() == player.getMaxHurtTime() - 1 && modules.getButton(scriptName, "Release on damage")) {
+    if (player.getHurtTime() == player.getMaxHurtTime() - 1 && modules.getButton(scriptName, "Release on damage")) { // Check if you took damage
         disableTicks = 10;
         toggle = false;
     }
@@ -96,8 +94,8 @@ void onPreUpdate() {
     if (lastPosition != null && !onGround && lastPosition.y > myPosition.y && myPosition.y > startFallHeight) {
         startFallHeight = myPosition.y;
     } else if (onGround && myPosition.y < startFallHeight) {
-        if (startFallHeight - myPosition.y > 3 && modules.getButton(scriptName, "Release on fall") && !client.allowFlying()) {
-            disableTicks = 6;
+        if (startFallHeight - myPosition.y > 3 && modules.getButton(scriptName, "Release on fall") && !client.allowFlying()) { // Check if you took fall damage
+            disableTicks = 5;
             toggle = false;
         }
         startFallHeight = -Double.MAX_VALUE;
@@ -121,7 +119,7 @@ boolean onPacketSent(CPacket packet) {
 
         if (c02.action.equals("ATTACK")) {
             if (entity.getHurtTime() <= modules.getSlider(scriptName, "Hurttime")) {
-                disableTicks = 2;
+                disableTicks = 1;
                 toggle = false;
             }
             if (modules.getButton(scriptName, "Check Distance") && entity.getPosition().distanceToSq(client.getPlayer().getPosition()) < 2.25) {
@@ -130,20 +128,20 @@ boolean onPacketSent(CPacket packet) {
             }
         } else {
             if (entity.getHurtTime() == 0) {
-                disableTicks = 2;
+                disableTicks = 1;
                 toggle = false;
             }
         }
     } else if (packet instanceof C09) {
         if (modules.getButton(scriptName, "Release on swap")) {
-            disableTicks = 2;
+            disableTicks = 1;
             toggle = false;
         }
     } else if (packet instanceof C07) {
         if (modules.getButton(scriptName, "Release when breaking")) {
             C07 c07 = (C07) packet;
             if (c07.status.equals("ABORT_DESTROY_BLOCK") || c07.status.equals("STOP_DESTROY_BLOCK") || c07.status.equals("START_DESTROY_BLOCK")) {
-                disableTicks = 2;
+                disableTicks = 1;
                 toggle = false;
             }
         }
