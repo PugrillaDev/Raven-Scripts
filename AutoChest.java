@@ -7,17 +7,6 @@ int status = -1, delay = 0, delayTicks = 0, inChestDelay = 1;
 HashSet<String> items = new HashSet<>();
 boolean automatic = false, foundItemsInInventory = false, foundItemsInChest = false, foundAllItemsInInventory = false, foundAllItemsInChest = false, doIron = false, doGold = false, doDiamonds = false, doEmeralds = false, stopWhenDone = true;
 
-String[] keyNames = {
-    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
-    "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
-    "BACK", "CAPITAL", "COMMA", "DELETE", "DOWN", "END", "ESCAPE", "F1", "F2", "F3", "F4", "F5",
-    "F6", "F7", "HOME", "INSERT", "LBRACKET", "LCONTROL", "LMENU", "LMETA", "LSHIFT", "MINUS",
-    "NUMPAD0", "NUMPAD1", "NUMPAD2", "NUMPAD3", "NUMPAD4", "NUMPAD5", "NUMPAD6", "NUMPAD7",
-    "NUMPAD8", "NUMPAD9", "PERIOD", "RETURN", "RCONTROL", "RSHIFT", "RBRACKET", "SEMICOLON",
-    "SLASH", "SPACE", "TAB", "GRAVE",
-};
-
 void onLoad() {
     modules.registerButton("Automatic", false);
     modules.registerButton("Stop When Finished", true);
@@ -27,8 +16,8 @@ void onLoad() {
     modules.registerButton("Diamonds", true);
     modules.registerButton("Emeralds", true);
 
-    modules.registerSlider("Inventory To Chest", "", 47, keyNames);
-    modules.registerSlider("Chest To Inventory", "", 34, keyNames);
+    modules.registerKey("Inventory To Chest", 100);
+    modules.registerKey("Chest To Inventory", 100);
 }
 
 void onPreUpdate() {
@@ -59,7 +48,7 @@ void onPreUpdate() {
         int chestSize = inventory.getChestSize();
         boolean clicked = false;
 
-        if ((automatic && !foundItemsInChest && !foundAllItemsInInventory) || (keybinds.isKeyDown(keybinds.getKeyIndex(keyNames[(int) modules.getSlider(scriptName, "Inventory To Chest")])) && delayTicks == 0)) {
+        if ((automatic && !foundItemsInChest && !foundAllItemsInInventory) || (modules.getKeyPressed(scriptName, "Inventory To Chest") && delayTicks == 0)) {
             for (int i = chestSize; i < inv.size(); i++) {
                 ItemStack item = inv.get(i);
                 if (item == null || !items.contains(item.name)) continue;
@@ -77,7 +66,7 @@ void onPreUpdate() {
 
         clicked = false;
 
-        if ((automatic && !foundItemsInInventory && !foundAllItemsInChest) || (keybinds.isKeyDown(keybinds.getKeyIndex(keyNames[(int) modules.getSlider(scriptName, "Chest To Inventory")])) && delayTicks == 0)) {
+        if ((automatic && !foundItemsInInventory && !foundAllItemsInChest) || (modules.getKeyPressed(scriptName, "Chest To Inventory") && delayTicks == 0)) {
             for (int i = 0; i < chestSize; i++) {
                 ItemStack item = inv.get(i);
                 if (item == null || !items.contains(item.name)) continue;
