@@ -61,8 +61,10 @@ void onLoad() {
 }
 
 void onPreUpdate() {
-    if (!client.getScreen().equals("GuiChest")) return;
-    locations.clear();
+    if (!client.getScreen().equals("GuiChest")) {
+        locations.clear();
+        return;
+    }
     
     Map<Integer, ItemStack> inv = createCustomInventory();
     int chestSize = inventory.getChestSize();
@@ -79,10 +81,7 @@ void onPreUpdate() {
             itemName = itemName.substring(4);
         }
 
-        HashSet<String> itemTypes = isQuickBuy
-            ? itemName.equals("pickaxe") ? pickaxeTypes
-            : itemName.equals("axe") ? axeTypes : null
-            : null;
+        HashSet<String> itemTypes = isQuickBuy ? itemName.equals("pickaxe") ? pickaxeTypes : itemName.equals("axe") ? axeTypes : null : null;
 
         int start = isQuickBuy ? 18 : 9;
         int end = isQuickBuy ? chestSize - 9 : 27;
@@ -98,7 +97,10 @@ void onPreUpdate() {
 }
 
 void onPostPlayerInput() {
-    if (!client.getScreen().equals("GuiChest")) return;
+    if (!client.getScreen().equals("GuiChest")) {
+        clickList.clear();
+        return;
+    }
     String chestName = inventory.getChest();
     boolean isQuickBuy = chestName.equals("Quick Buy");
     boolean isUpgrades = chestName.equals("Upgrades & Traps");
@@ -131,15 +133,17 @@ void onPostPlayerInput() {
         clickSpecifiedItem(item, hotbarSlot);
     }
 
-    if (!sentinvPacket && !clickList.isEmpty()) {
-        Integer[] click = clickList.remove(0);
-        int slot = click[0];
-        int hotbarSlot = click[1];
+    if (client.getPlayer().getTicksExisted() % 2 == 0) {
+        if (!sentinvPacket && !clickList.isEmpty()) {
+            Integer[] click = clickList.remove(0);
+            int slot = click[0];
+            int hotbarSlot = click[1];
 
-        if (hotbarSlot >= 0) {
-            inventory.click(slot, hotbarSlot, 2);
-        } else {
-            inventory.click(slot, 0, 0);
+            if (hotbarSlot >= 0) {
+                inventory.click(slot, hotbarSlot, 2);
+            } else {
+                inventory.click(slot, 0, 0);
+            }
         }
     }
 }
