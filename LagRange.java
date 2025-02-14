@@ -59,7 +59,6 @@ void onPreUpdate() {
             if (checkTeams) {
                 String displayName = p.getDisplayName();
                 if (!team.isEmpty() && displayName.startsWith(team)) continue; // If player's name has the same team color as our name
-                if (p.isInvisible() && displayName.startsWith(util.colorSymbol + "c") && !displayName.contains(" ")) continue; // Watchdog Bot
             }
 
             Vec3 position = p.getPosition();

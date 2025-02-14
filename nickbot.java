@@ -64,34 +64,32 @@ void onPreUpdate() {
     
         client.chat("/nick help setrandom");
     }
-}
 
-void onGuiUpdate(String name, boolean opened) {
-    if (!opened || !name.equals("GuiScreenBook")) {
-        return;
-    }
+    if (client.getScreen().equals("GuiScreenBook")) {
+        List<String> pages = inventory.getBookContents();
+        if (pages != null) {
+            String nick = "";
 
-    List<String> pages = inventory.getBookContents();
-    String nick = "";
-    
-    for (String page : pages) {
-        if (!page.contains("We've generated a random username for you")) continue;
+            for (int i = 0; i < pages.size(); i++) {
+                String page = pages.get(i);
+                if (!page.equals("you:")) continue;
+                nick = util.strip(pages.get(i + 1));
+                break;
+            }
 
-        nick = page.split(NICK_CLAIM_COMMAND)[1].split(" ")[0];
-        break;
-    }
+            if (nick.isEmpty()) return;
 
-    if (nick.isEmpty()) return;
+            boolean isGood = isGood(nick);
 
-    boolean isGood = isGood(nick);
-
-    if (isGood) {
-        client.chat(NICK_CLAIM_COMMAND + nick);
-        client.print(chatPrefix + "&eClaimed nick &3" + nick + "&e!");
-        enabled = false;
-    } else {
-        client.print(chatPrefix + "&eNew nick #" + (++counter) + ": &3" + nick + "&e.");
-        client.closeScreen();
+            if (isGood) {
+                client.chat(NICK_CLAIM_COMMAND + nick);
+                client.print(chatPrefix + "&eClaimed nick &3" + nick + "&e!");
+                enabled = false;
+            } else {
+                client.print(chatPrefix + "&eNew nick #" + (++counter) + ": &3" + nick + "&e.");
+                client.closeScreen();
+            }
+        }
     }
 }
 

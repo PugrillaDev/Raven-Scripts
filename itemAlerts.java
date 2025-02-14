@@ -149,8 +149,6 @@ void onPreUpdate() {
         setupItems();
     }
 
-    doAlerts();
-
     if (!alerts.isEmpty() && !bridge.has("pugalert")) {
         bridge.add("pugalert", alerts.remove(0));
     }
@@ -164,103 +162,101 @@ void onWorldJoin(Entity en) {
     }
 }
 
-void doAlerts() {
-    if (status != 3) return;
+boolean onPacketReceived(SPacket packet) {
+    if (packet instanceof S04) {
+        S04 s04 = (S04) packet;
+        ItemStack item = s04.item;
+        int entityId = s04.entityId;
+        int slot = s04.slot;
+        Entity entity = world.getEntityById(entityId);
+        doAlerts(entity, item, slot);
+    }
+    return true;
+}
+
+void doAlerts(Entity player, ItemStack item, int slot) {
+    if (player == null || !player.type.contains("EntityOtherPlayerMP") || status != 3) return;
     Entity playerEntity = client.getPlayer();
     long now = client.time();
-    checkedPlayers.clear();
-    for (Entity player : world.getPlayerEntities()) {
-        if (player == playerEntity || player.isDead()) continue;
-        NetworkPlayer nwp = player.getNetworkPlayer();
-        String playerDisplay = player.getDisplayName();
-        if (nwp == null || (!showTeammates && playerDisplay.startsWith(util.colorSymbol + myTeam)) || playerDisplay.startsWith(util.colorSymbol + "7")) continue;
+    if (player == playerEntity || player.isDead()) return;
+    NetworkPlayer nwp = player.getNetworkPlayer();
+    String playerDisplay = player.getDisplayName();
+    if (nwp == null || (!showTeammates && playerDisplay.startsWith(util.colorSymbol + myTeam)) || playerDisplay.startsWith(util.colorSymbol + "7")) return;
 
-        String uuid = nwp.getUUID();
-        if (checkedPlayers.contains(uuid)) continue;
-        
-        ItemStack item = player.getHeldItem();
-        String teamColor = playerDisplay.substring(1, 2);
-        String team = getColoredTeam(teamColor);
-        if (team == null) continue;
-        String itemName = item == null ? "" : item.name;
-        ItemStack pants = player.getArmorInSlot(1);
-        Map<String, Object> existingData = playerItems.getOrDefault(uuid, new HashMap<>());
+    String uuid = nwp.getUUID();
+    String teamColor = playerDisplay.substring(1, 2);
+    String team = getColoredTeam(teamColor);
+    if (team == null) return;
+    String itemName = item == null ? "" : item.name;
+    String itemDisplayName = item != null ? item.displayName : "";
+    Map<String, Object> existingData = playerItems.getOrDefault(uuid, new HashMap<>());
 
-        if (item != null) {
-            boolean heldRaw = heldItemNames.contains(itemName);
-            boolean heldDisplay = heldItemDisplayNames.contains(item.displayName);
+    if (item != null) {
+        boolean heldRaw = heldItemNames.contains(itemName);
+        boolean heldDisplay = heldItemDisplayNames.contains(itemDisplayName);
+        boolean isWeapon = itemName.endsWith("sword");
+        boolean hasEnchantments = item.getEnchantments() != null;
 
-            if (heldRaw || heldDisplay) {
-                String lastItem = existingData.getOrDefault("lastitem", "").toString();
-                String name = heldRaw ? itemName : item.displayName;
-                long lastTime = Long.parseLong(existingData.getOrDefault(name, 0).toString());
+        if (slot == 0 && (heldRaw || heldDisplay)) {
+            String lastItem = existingData.getOrDefault("lastitem", "").toString();
+            String trackedItemName = heldRaw ? itemName : itemDisplayName;
+            long lastTime = Long.parseLong(existingData.getOrDefault(trackedItemName, "0").toString());
 
-                if (now > lastTime && !lastItem.equals(itemName)) {
-                    String coloredName = util.colorSymbol + teamColor + player.getName();
-                    String itemDisplayName = itemDisplayColors.get(name);
-
-                    String msg = chatPrefix + "&eAlert: " + coloredName + " &7is holding&r " + itemDisplayName + "&r&7";
-                    if (showDistance) msg += " &7(&d" + (int)playerEntity.getPosition().distanceTo(player.getPosition()) + "m&7)";
-
-                    String alertmsg = util.color(coloredName + " &7has " + itemDisplayName + "&7.");
-                    if (modules.getButton(scriptName, "HUD Alerts")) {
-                        addAlert(util.color("&lItem Alerts"), alertmsg, (int)(modules.getSlider(scriptName, "Hud Alerts Duration") * 1000), "");
-                    }
-
-                    existingData.put(name, now + DELAY_INTERVAL);
-                    if (modules.getButton(scriptName, "Chat Alerts")) client.print(msg);
-                }
-            }
-
-            if (showSharpness && !teamUpgrades.contains("sharpness" + teamColor) && itemName.endsWith("sword") && item.getEnchantments() != null) {
-                teamUpgrades.add("sharpness" + teamColor);
-
-                String alertmsg = util.color(team + " &7has &rSharpened Swords&7.");
-                String msg = chatPrefix + "&eAlert: " + team + " &7purchased &bSharpened Swords";
-
-                if (modules.getButton(scriptName, "HUD Alerts")) {
-                    addAlert(util.color("&lItem Alerts"), alertmsg, (int)(modules.getSlider(scriptName, "Hud Alerts Duration") * 1000), "");
-                }
-                if (modules.getButton(scriptName, "Chat Alerts")) client.print(msg);
-            }
-        }
-
-        existingData.put("lastitem", itemName);
-
-        if (pants != null) {
-            String existingArmor = existingData.getOrDefault("armorpiece", "").toString();
-            existingData.put("armorpiece", pants.name);
-
-            if (armorPieceNames.contains(pants.name) && !existingArmor.isEmpty() && !existingArmor.equals(pants.name)) {
+            if (now > lastTime && !lastItem.equals(itemName)) {
                 String coloredName = util.colorSymbol + teamColor + player.getName();
-                String itemDisplayName = itemDisplayColors.get(pants.name);
+                String displayColor = itemDisplayColors.get(trackedItemName);
+                String msg = chatPrefix + "&eAlert: " + coloredName + " &7is holding&r " + displayColor + "&r&7";
 
-                String msg = chatPrefix + "&eAlert: " + coloredName + " &7purchased&r " + itemDisplayName + "&r&7";
-                if (showDistance) msg += " &7(&d" + (int)playerEntity.getPosition().distanceTo(player.getPosition()) + "m&7)";
-                String alertmsg = util.color(coloredName + " &7has " + itemDisplayName + "&7.");
+                if (showDistance) msg += " &7(&d" + (int) playerEntity.getPosition().distanceTo(player.getPosition()) + "m&7)";
+                String alertmsg = util.color(coloredName + " &7has " + displayColor + "&7.");
 
                 if (modules.getButton(scriptName, "HUD Alerts")) {
-                    addAlert(util.color("&lItem Alerts"), alertmsg, (int)(modules.getSlider(scriptName, "Hud Alerts Duration") * 1000), "");
+                    addAlert(util.color("&lItem Alerts"), alertmsg, (int) (modules.getSlider(scriptName, "Hud Alerts Duration") * 1000), "");
                 }
                 if (modules.getButton(scriptName, "Chat Alerts")) client.print(msg);
+
+                existingData.put(trackedItemName, now + DELAY_INTERVAL);
             }
+        }
 
-            if (showProtection && !teamUpgrades.contains("protection" + teamColor) && pants.getEnchantments() != null) {
-                teamUpgrades.add("protection" + teamColor);
+        if (hasEnchantments && (slot == 2 || (slot == 0 && isWeapon))) {
+            String upgradeKey = slot == 2 ? "protection" + teamColor : "sharpness" + teamColor;
+            String upgradeName = slot == 2 ? "Reinforced Armor" : "Sharpened Swords";
+            String upgradeAlert = "&b" + upgradeName;
 
-                String alertmsg = util.color(team + " &7has &rReinforced Armor&7.");
-                String msg = chatPrefix + "&eAlert: " + team + " &7purchased &bReinforced Armor";
+            if (!teamUpgrades.contains(upgradeKey)) {
+                teamUpgrades.add(upgradeKey);
+                String msg = chatPrefix + "&eAlert: " + team + " &7purchased " + upgradeAlert;
+                String alertmsg = util.color(team + " &7has " + upgradeAlert + "&7.");
 
                 if (modules.getButton(scriptName, "HUD Alerts")) {
-                    addAlert(util.color("&lItem Alerts"), alertmsg, (int)(modules.getSlider(scriptName, "Hud Alerts Duration") * 1000), "");
+                    addAlert(util.color("&lItem Alerts"), alertmsg, (int) (modules.getSlider(scriptName, "Hud Alerts Duration") * 1000), "");
                 }
                 if (modules.getButton(scriptName, "Chat Alerts")) client.print(msg);
             }
         }
 
-        playerItems.put(uuid, existingData);
-        checkedPlayers.add(uuid);
+        if (slot == 2 && armorPieceNames.contains(itemName)) {
+            String existingArmor = existingData.getOrDefault("armorpiece", "").toString();
+            if (!existingArmor.isEmpty() && !existingArmor.equals(itemName)) {
+                String coloredName = util.colorSymbol + teamColor + player.getName();
+                String armorDisplayColor = itemDisplayColors.get(itemName);
+                String msg = chatPrefix + "&eAlert: " + coloredName + " &7purchased&r " + armorDisplayColor + "&r&7";
+
+                if (showDistance) msg += " &7(&d" + (int) playerEntity.getPosition().distanceTo(player.getPosition()) + "m&7)";
+                String alertmsg = util.color(coloredName + " &7has " + armorDisplayColor + "&7.");
+
+                if (modules.getButton(scriptName, "HUD Alerts")) {
+                    addAlert(util.color("&lItem Alerts"), alertmsg, (int) (modules.getSlider(scriptName, "Hud Alerts Duration") * 1000), "");
+                }
+                if (modules.getButton(scriptName, "Chat Alerts")) client.print(msg);
+            }
+            existingData.put("armorpiece", itemName);
+        }
     }
+
+    if (slot == 0) existingData.put("lastitem", itemName);
+    playerItems.put(uuid, existingData);
 }
 
 boolean onPacketSent(CPacket packet) {

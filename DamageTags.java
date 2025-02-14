@@ -7,7 +7,8 @@
 Map<String, Float> playerHealth = new HashMap<>();
 List<Map<String, Object>> objects = new ArrayList<>();
 int green = new Color(0, 255, 0).getRGB(), red = new Color(255, 0, 0).getRGB(), mode, colorMode;
-double baseScale, yOffset, fadeDistance = 2, min = 0.5;
+double yOffset, fadeDistance = 2.5, min = 0.7;
+float baseScale;
 long duration, fadeOutTime = 150;
 boolean showHealing, showDamage;
 
@@ -16,9 +17,13 @@ void onLoad() {
     modules.registerButton("Show Damage", true);
     modules.registerSlider("Mode", "", 0, new String[]{ "Hearts", "Health Points"});
     modules.registerSlider("Color", "", 0, new String[]{ "RAG", "Team"});
-    modules.registerSlider("Scale", "", 5, 0, 10, 0.5);
+    modules.registerSlider("Scale", "", 1, 0, 3, 0.1);
     modules.registerSlider("Duration", "s", 1.5, 0, 5, 0.1);
     modules.registerSlider("Y Offset", "", 1.8, -2, 3, 0.1);
+
+    modules.registerButton("Depth", true);
+    modules.registerButton("Box", true);
+    modules.registerButton("Shadow", true);
 }
 
 void onPreUpdate() {
@@ -70,7 +75,7 @@ void onPreUpdate() {
 
     if (!objects.isEmpty()) {
         duration = (long) (modules.getSlider(scriptName, "Duration") * 1000);
-        baseScale = modules.getSlider(scriptName, "Scale");
+        baseScale = (float) modules.getSlider(scriptName, "Scale");
 
         for (Map<String, Object> object : objects) {
             object.put("lastdistance", object.get("distance"));
@@ -83,7 +88,7 @@ void onPreUpdate() {
     }
 }
 
-void onRenderTick(float partialTicks) {
+void onRenderWorld(float partialTicks) {
     long now = client.time();
     int size = client.getDisplaySize()[2];
 
@@ -99,43 +104,33 @@ void onRenderTick(float partialTicks) {
         double distance = (double) object.get("distance");
         if (distance > 25) continue;
 
+        double lastDistance = (double) object.get("lastdistance");
+        double interpolatedDistance = lastDistance + (distance - lastDistance) * partialTicks;
+
         Vec3 position = (Vec3) object.get("position");
         int color = (int) object.get("color");
         String health = (String) object.get("health");
 
         int alpha = 255;
         if (elapsed > duration) {
-            alpha = (int) (255 * (1 - ((double) (elapsed - duration) / fadeOutTime)));
+            double fadeFactor = 1 - ((double) (elapsed - duration) / fadeOutTime);
+            alpha = (int) (230 * fadeFactor + 25);
         }
 
-        if (alpha <= 5) {
+        if (alpha < 26) {
             it.remove();
             continue;
         }
 
-        if (distance < fadeDistance) {
-            double scaledDistance = (distance - min) / (fadeDistance - min);
-            int proximityAlpha = (int) (5 + (250 * Math.max(scaledDistance, 0)));
+        if (interpolatedDistance < fadeDistance) {
+            double scaledDistance = (interpolatedDistance - min) / (fadeDistance - min);
+            int proximityAlpha = (int) (25 + (230 * Math.max(scaledDistance, 0)));
             alpha = Math.min(alpha, proximityAlpha);
         }
 
         color = (color & 0x00FFFFFF) | (alpha << 24);
 
-        Vec3 screenPos = render.worldToScreen(position.x, position.y, position.z, size, partialTicks);
-        if (screenPos.z < 0 || screenPos.z >= 1.0003684d) continue;
-
-        double lastDistance = (double) object.get("lastdistance");
-        double interpolatedDistance = lastDistance + (distance - lastDistance) * partialTicks;
-
-        float scale = (float) (baseScale / interpolatedDistance);
-
-        float textWidth = render.getFontWidth(health) * scale;
-        float textHeight = render.getFontHeight() * scale;
-
-        float screenX = (float) screenPos.x - textWidth / 2f;
-        float screenY = (float) screenPos.y - textHeight / 2f;
-
-        render.text2d(health, screenX, screenY, scale, color, true);
+        render.text3d(health, position, baseScale, modules.getButton(scriptName, "Shadow"), modules.getButton(scriptName, "Depth"), modules.getButton(scriptName, "Box"), color);
     }
 }
 

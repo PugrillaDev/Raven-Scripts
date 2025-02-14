@@ -325,7 +325,7 @@ void searchForBeds() {
                 bedData.put("visible", true);
                 bedData.put("distance", myPos.distanceTo(position1));
                 bedData.put("position1", position1);
-                bedData.put("position2", position2);
+                bedData.put("position2", position2 == null ? position1 : position2);
 
                 List<String> layers = getBedDefenseLayers(position1, position2);
                 bedData.put("layers", layers);

@@ -26,6 +26,8 @@ void onLoad() {
     setDataArray("NoSlow", "", "Mode", new String[]{"Vanilla", "Float", "Interact", "Invalid", "Jump", "Sneak"});
     setDataArray("NoFall", "", "Mode", new String[]{"Spoof", "Single", "Extra", "NoGround A", "NoGround B", "Precision", "Position"});
     setDataArray("BedAura", "", "Break mode", new String[]{"Legit", "Instant", "Swap"});
+    setDataSlider("LagRange", "", "%v1ms", new String[]{"Latency"});
+    setDataArray("HitSelect", "", "Mode", new String[]{"Last", "Criticals"});
 
     // Color settings
     modules.registerSlider("Color 1 - Red", "", 255, 0, 255, 1);
@@ -37,7 +39,7 @@ void onLoad() {
     modules.registerSlider("Background Opacity", "", 0, 0, 255, 1);
 
     modules.registerSlider("Mode", "Mode", 0, new String[]{"Static", util.color("&cR&6a&ei&an&bb&do&5w"), util.color("&4G&cr&5a&bd&3i&9e&1n&1t")});
-    modules.registerSlider("Direction", "Direction", 1, new String[]{"Up", "Down"});
+    modules.registerSlider("Direction", "", 1, new String[]{"Up", "Down"});
     modules.registerSlider("Wave Speed", "s", 5, 0.1, 10, 0.1);
 
     modules.registerSlider("Animations", "", 0, new String[]{"Scale Right", "Scale Center"});
@@ -134,45 +136,41 @@ void updateCustomData(Map<String, Object> customData) {
 }
 
 void onEnable() {
+    mods.clear();
     resetTicks = 0;
-    if (!firstTime) {
-        Map<String, List<String>> categories = modules.getCategories();
-        for (String category : categories.keySet()) {
-            if (category.equalsIgnoreCase("profiles") || category.equalsIgnoreCase("fun")) continue;
-
-            List<String> modulesList = categories.get(category);
-            for (String module : modulesList) {
-                Map<String, Object> modData = new HashMap<>();
-                modData.put("name", module);
-                modData.put("visibility", false);
-                modData.put("offset", 0);
-                modData.put("scale", 0);
-                modData.put("animating", false);
-                modData.put("animatingUp", false);
-                modData.put("animationStart", 0L);
-                modData.put("animationProgress", 0);
-                mods.add(modData);
-            }
+    Map<String, List<String>> categories = modules.getCategories();
+    for (String category : categories.keySet()) {
+        if (category.equalsIgnoreCase("profiles")) continue;
+        List<String> modulesList = categories.get(category);
+        for (String module : modulesList) {
+            Map<String, Object> modData = new HashMap<>();
+            modData.put("name", module);
+            modData.put("visibility", false);
+            modData.put("offset", 0);
+            modData.put("scale", 0);
+            modData.put("animating", false);
+            modData.put("animatingUp", false);
+            modData.put("animationStart", 0L);
+            modData.put("animationProgress", 0);
+            mods.add(modData);
         }
-        sortModules();
-        firstTime = true;
     }
 
     updateButtonStates();
     updateSliders();
+    updateEnabledModules();
     sortModules();
 }
 
 void onPreUpdate() {
     resetTicks++;
-    int ticks = client.getPlayer().getTicksExisted();
     updateEnabledModules();
     lineGap = (float) modules.getSlider(scriptName, "Line Gap");
     moduleHeight = (float) render.getFontHeight() + gap;
     xOffset = (float) modules.getSlider(scriptName, "X-Offset");
     yOffset = (float) modules.getSlider(scriptName, "Y-Offset");
 
-    if (ticks % 5 == 0) {
+    if (resetTicks == 1 || resetTicks % 5 == 0) {
         updateSliders();
     }
 }
