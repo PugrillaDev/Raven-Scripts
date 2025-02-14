@@ -16,8 +16,8 @@ void onLoad() {
     modules.registerButton("Diamonds", true);
     modules.registerButton("Emeralds", true);
 
-    modules.registerKey("Inventory To Chest", 100);
-    modules.registerKey("Chest To Inventory", 100);
+    modules.registerKey("Inventory To Chest", 0);
+    modules.registerKey("Chest To Inventory", 0);
 }
 
 void onPreUpdate() {
