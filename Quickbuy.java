@@ -63,58 +63,49 @@ void onLoad() {
 void onPreUpdate() {
     if (!client.getScreen().equals("GuiChest")) {
         locations.clear();
+        clickList.clear();
         return;
     }
-    
+
     Map<Integer, ItemStack> inv = createCustomInventory();
     int chestSize = inventory.getChestSize();
     boolean isQuickBuy = inventory.getChest().equals("Quick Buy");
     boolean isUpgrades = inventory.getChest().equals("Upgrades & Traps");
-
-    if (!isQuickBuy && !isUpgrades) return;
-
-    for (String itemName : items) {
-        String fullItemName = itemName;
-        if (isQuickBuy && itemName.startsWith("upg ")) continue;
-        if (isUpgrades) {
-            if (!itemName.startsWith("upg ")) continue;
-            itemName = itemName.substring(4);
-        }
-
-        HashSet<String> itemTypes = isQuickBuy ? itemName.equals("pickaxe") ? pickaxeTypes : itemName.equals("axe") ? axeTypes : null : null;
-
-        int start = isQuickBuy ? 18 : 9;
-        int end = isQuickBuy ? chestSize - 9 : 27;
-
-        for (int i = start; i < end; i++) {
-            ItemStack item = inv.get(i);
-            if (item == null || (itemTypes != null && !itemTypes.contains(item.name)) || 
-                (itemTypes == null && !item.name.equals(itemName))) continue;
-            locations.put(fullItemName, i);
-            break;
-        }
-    }
-}
-
-void onPostPlayerInput() {
-    if (!client.getScreen().equals("GuiChest")) {
-        clickList.clear();
-        return;
-    }
-    String chestName = inventory.getChest();
-    boolean isQuickBuy = chestName.equals("Quick Buy");
-    boolean isUpgrades = chestName.equals("Upgrades & Traps");
     if (!isQuickBuy && !isUpgrades) return;
 
     long now = client.time();
     for (String item : items) {
+        String searchItem = item;
         if (isQuickBuy && item.startsWith("upg ")) continue;
-        if (isUpgrades && !item.startsWith("upg ")) continue;
+        if (isUpgrades) {
+            if (!item.startsWith("upg ")) continue;
+            searchItem = item.substring(4);
+        }
+
+        HashSet<String> itemTypes = null;
+        if (isQuickBuy) {
+            if (searchItem.equals("pickaxe"))
+                itemTypes = pickaxeTypes;
+            else if (searchItem.equals("axe"))
+                itemTypes = axeTypes;
+        }
+
+        int start = isQuickBuy ? 18 : 9;
+        int end = isQuickBuy ? chestSize - 9 : 27;
+        for (int i = start; i < end; i++) {
+            ItemStack stack = inv.get(i);
+            if (stack == null) continue;
+            if (itemTypes != null && !itemTypes.contains(stack.name)) continue;
+            if (itemTypes == null && !stack.name.equals(searchItem)) continue;
+            locations.put(item, i);
+            break;
+        }
+
+        if (isQuickBuy && item.startsWith("upg ") || isUpgrades && !item.startsWith("upg ")) continue;
 
         String displayName = itemDisplayNames.get(item);
         boolean keyDown = modules.getKeyPressed(scriptName, displayName + " Keybind");
         boolean lastKeyState = keyStates.getOrDefault(item, false);
-
         if (!keyDown) {
             keyStates.put(item, false);
             continue;
@@ -124,13 +115,12 @@ void onPostPlayerInput() {
         boolean turbo = !item.startsWith("upg ") && modules.getButton(scriptName, displayName + " Turbo");
         long cooldown = item.startsWith("upg ") ? 300 : 90;
         long lastTime = purchases.getOrDefault(item, 0L);
-
         if (!turbo && lastKeyState) continue;
         if (now - lastTime < cooldown) continue;
 
         purchases.put(item, now);
         keyStates.put(item, true);
-        clickSpecifiedItem(item, hotbarSlot);
+        clickItem(item, hotbarSlot);
     }
 
     if (client.getPlayer().getTicksExisted() % 2 == 0) {
@@ -138,7 +128,6 @@ void onPostPlayerInput() {
             Integer[] click = clickList.remove(0);
             int slot = click[0];
             int hotbarSlot = click[1];
-
             if (hotbarSlot >= 0) {
                 inventory.click(slot, hotbarSlot, 2);
             } else {
@@ -148,7 +137,7 @@ void onPostPlayerInput() {
     }
 }
 
-void clickSpecifiedItem(String itemName, int hotbarSlot) {
+void clickItem(String itemName, int hotbarSlot) {
     Integer slot = locations.get(itemName);
     if (slot != null) {
         clickList.add(new Integer[]{slot, hotbarSlot});
