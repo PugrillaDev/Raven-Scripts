@@ -184,9 +184,3 @@ boolean onPacketSent(CPacket packet) {
     }
     return true;
 }
-
-void onWorldJoin(Entity en) {
-    if (en == client.getPlayer()) {
-        locations.clear();
-    }
-}
