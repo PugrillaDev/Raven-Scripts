@@ -3,6 +3,9 @@
     loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/hotkeys.java"
 */
 
+Map<String, String> hotkeys = new HashMap<>();
+Map<String, Boolean> lastPressed = new HashMap<>();
+
 void onLoad() {
     modules.registerButton("Show Alerts", true);
     registerHotkey("Bedwars Lobby", "/bedwars");
@@ -10,9 +13,6 @@ void onLoad() {
     registerHotkey("Warp", "/p warp");
     registerHotkey("Fours", "/play bedwars_four_four");
 }
-
-Map<String, String> hotkeys = new HashMap<>();
-Map<String, Boolean> lastPressed = new HashMap<>();
 
 void onEnable() {
     for (String key : hotkeys.keySet()) {
