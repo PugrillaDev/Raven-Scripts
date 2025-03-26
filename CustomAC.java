@@ -267,8 +267,8 @@ float getMoveYaw(double deltaX, double deltaZ, float playerYaw) {
 
 boolean checkSurroundingBlocks(Vec3 position) {
     double[][] offsets = {{0.5, 0}, {-0.5, 0}, {0, 0.5}, {0, -0.5}};
-    int legHeight = (int) Math.floor(position.y);
-    int torsoHeight = legHeight + 1;
+    int bottom = (int) Math.floor(position.y);
+    int middle = legHeight + 1;
 
     for (double[] offset : offsets) {
         double offsetX = offset[0];
