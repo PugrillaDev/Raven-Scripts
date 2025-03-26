@@ -144,6 +144,9 @@ boolean onPacketSent(CPacket packet) {
                 toggle = false;
             }
         }
+    } else if (packet instanceof C01) {
+        disableTicks = 20;
+        toggle = false;
     }
 
     return true;

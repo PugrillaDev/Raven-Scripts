@@ -19,6 +19,7 @@ int resetTicks = 0;
 boolean lowercase;
 
 void onLoad() {
+    setDataSlider("AutoClicker", "AutoClicker", "%v1-%v2", new String[]{"Min CPS", "Max CPS"});
     setDataArray("KillAura", "", "Targets", new String[]{"Single", "Single", "Switch"});
     setDataSlider("AntiKnockback", "Velocity", "%v1% %v2%", new String[]{"Horizontal", "Vertical"});
     setDataSlider("Velocity", "", "%v1% %v2%", new String[]{"Horizontal", "Vertical"});
