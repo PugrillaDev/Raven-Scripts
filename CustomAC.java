@@ -268,13 +268,13 @@ float getMoveYaw(double deltaX, double deltaZ, float playerYaw) {
 boolean checkSurroundingBlocks(Vec3 position) {
     double[][] offsets = {{0.5, 0}, {-0.5, 0}, {0, 0.5}, {0, -0.5}};
     int bottom = (int) Math.floor(position.y);
-    int middle = legHeight + 1;
+    int middle = bottom + 1;
 
     for (double[] offset : offsets) {
         double offsetX = offset[0];
         double offsetZ = offset[1];
-        String blockLeg = world.getBlockAt((int) Math.floor(position.x + offsetX), legHeight, (int) Math.floor(position.z + offsetZ)).name;
-        String blockTorso = world.getBlockAt((int) Math.floor(position.x + offsetX), torsoHeight, (int) Math.floor(position.z + offsetZ)).name;
+        String blockLeg = world.getBlockAt((int) Math.floor(position.x + offsetX), bottom, (int) Math.floor(position.z + offsetZ)).name;
+        String blockTorso = world.getBlockAt((int) Math.floor(position.x + offsetX), middle, (int) Math.floor(position.z + offsetZ)).name;
         if (!blockLeg.equals("air") || !blockTorso.equals("air")) {
             return true;
         }
