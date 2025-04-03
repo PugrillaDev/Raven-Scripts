@@ -3,14 +3,13 @@
     loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/AutoChest.java"
 */
 
-int status = -1, delay = 0, delayTicks = 0, inChestDelay = 1;
-HashSet<String> items = new HashSet<>();
-boolean automatic = false, foundItemsInInventory = false, foundItemsInChest = false, foundAllItemsInInventory = false, foundAllItemsInChest = false, doIron = false, doGold = false, doDiamonds = false, doEmeralds = false, stopWhenDone = true;
+int delayTicks, inChestDelay;
+boolean foundAllItemsInInventory, foundAllItemsInChest, foundItemsInChest, foundItemsInInventory;
 
 void onLoad() {
     modules.registerButton("Automatic", false);
     modules.registerButton("Stop When Finished", true);
-    modules.registerSlider("Delay", "", 1, 0, 20, 1);
+    modules.registerSlider("Delay", "ms", 50, 0, 1000, 50);
     modules.registerButton("Iron", true);
     modules.registerButton("Gold", true);
     modules.registerButton("Diamonds", true);
@@ -21,69 +20,65 @@ void onLoad() {
 }
 
 void onPreUpdate() {
-    if (client.getPlayer().getTicksExisted() % 20 == 0) {
-        status = getBedwarsStatus();
-        delay = (int) modules.getSlider(scriptName, "Delay");
-        automatic = modules.getButton(scriptName, "Automatic");
-        stopWhenDone = modules.getButton(scriptName, "Stop When Finished");
-        doIron = modules.getButton(scriptName, "Iron");
-        doGold = modules.getButton(scriptName, "Gold");
-        doDiamonds = modules.getButton(scriptName, "Diamonds");
-        doEmeralds = modules.getButton(scriptName, "Emeralds");
-
-        HashSet<String> tempitems = new HashSet<>();
-        if (doIron) tempitems.add("iron_ingot");
-        if (doGold) tempitems.add("gold_ingot");
-        if (doDiamonds) tempitems.add("diamond");
-        if (doEmeralds) tempitems.add("emerald");
-        
-        items = tempitems;
-    }
-
     if (delayTicks > 0) delayTicks--;
 
-    if (status == 3 && client.getScreen().equals("GuiChest") && inventory.getChest().endsWith("Chest")) {
-        if (inChestDelay > 0 && --inChestDelay != 0) return;
-        Map<Integer, ItemStack> inv = createCustomInventory();
-        int chestSize = inventory.getChestSize();
-        boolean clicked = false;
-
-        if ((automatic && !foundItemsInChest && !foundAllItemsInInventory) || (modules.getKeyPressed(scriptName, "Inventory To Chest") && delayTicks == 0)) {
-            for (int i = chestSize; i < inv.size(); i++) {
-                ItemStack item = inv.get(i);
-                if (item == null || !items.contains(item.name)) continue;
-                inventory.click(i, 0, 1);
-                clicked = true;
-                delayTicks = delay;
-                foundItemsInInventory = true;
-                if (delay > 0) break;
-            }
-
-            if (stopWhenDone && !clicked && foundItemsInInventory) {
-                foundAllItemsInInventory = true;
-            }
-        }
-
-        clicked = false;
-
-        if ((automatic && !foundItemsInInventory && !foundAllItemsInChest) || (modules.getKeyPressed(scriptName, "Chest To Inventory") && delayTicks == 0)) {
-            for (int i = 0; i < chestSize; i++) {
-                ItemStack item = inv.get(i);
-                if (item == null || !items.contains(item.name)) continue;
-                inventory.click(i, 1, 1);
-                clicked = true;
-                delayTicks = delay;
-                foundItemsInChest = true;
-                if (delay > 0) break;
-            }
-
-            if (stopWhenDone && !clicked && foundItemsInChest) {
-                foundAllItemsInChest = true;
-            }
-        }
-    } else {
+    if (!client.getScreen().equals("GuiChest") || !inventory.getChest().endsWith("Chest") || getBedwarsStatus() != 3) {
         inChestDelay = 2;
         foundItemsInInventory = foundItemsInChest = foundAllItemsInChest = foundAllItemsInInventory = false;
+        return;
+    }
+
+    if (inChestDelay > 0 && --inChestDelay != 0) return;
+
+    boolean automatic = modules.getButton(scriptName, "Automatic");
+    boolean stopWhenDone = modules.getButton(scriptName, "Stop When Finished");
+    int delay = (int) (modules.getSlider(scriptName, "Delay") / 50);
+
+    HashSet<String> items = new HashSet<>();
+    if (modules.getButton(scriptName, "Iron")) items.add("iron_ingot");
+    if (modules.getButton(scriptName, "Gold")) items.add("gold_ingot");
+    if (modules.getButton(scriptName, "Diamonds")) items.add("diamond");
+    if (modules.getButton(scriptName, "Emeralds")) items.add("emerald");
+
+    Map<Integer, ItemStack> inv = createCustomInventory();
+    int chestSize = inventory.getChestSize();
+    boolean clicked = false;
+
+    boolean invToChestKey = modules.getKeyPressed(scriptName, "Inventory To Chest");
+    boolean chestToInvKey = modules.getKeyPressed(scriptName, "Chest To Inventory");
+
+    if ((automatic && !foundItemsInChest && !foundAllItemsInInventory) || (invToChestKey && delayTicks == 0)) {
+        for (int i = chestSize; i < inv.size(); i++) {
+            ItemStack item = inv.get(i);
+            if (item == null || !items.contains(item.name)) continue;
+            inventory.click(i, 0, 1);
+            clicked = true;
+            delayTicks = delay;
+            foundItemsInInventory = true;
+            if (delay > 0) break;
+        }
+
+        if (stopWhenDone && !clicked && foundItemsInInventory) {
+            foundAllItemsInInventory = true;
+        }
+    }
+
+    clicked = false;
+
+    if ((automatic && !foundItemsInInventory && !foundAllItemsInChest) || (chestToInvKey && delayTicks == 0)) {
+        for (int i = 0; i < chestSize; i++) {
+            ItemStack item = inv.get(i);
+            if (item == null || !items.contains(item.name)) continue;
+            inventory.click(i, 1, 1);
+            clicked = true;
+            delayTicks = delay;
+            foundItemsInChest = true;
+            if (delay > 0) break;
+        }
+
+        if (stopWhenDone && !clicked && foundItemsInChest) {
+            foundAllItemsInChest = true;
+        }
     }
 }
 
