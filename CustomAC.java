@@ -9,7 +9,6 @@ Map<String, Object> debugData = null;
 String team = "";
 String[] checks = {"NoSlowA", "AutoBlockA", "SprintA", "VelocityA", "RotationA", "ScaffoldA", /* "ScaffoldB",  */"ScaffoldC"};
 long lastReport;
-boolean sentinvPacket;
 
 void onLoad() {
     modules.registerDescription("Unreliable in replays");
@@ -228,9 +227,6 @@ void onPreUpdate() {
 }
 
 boolean onPacketSent(CPacket packet) {
-    if (packet instanceof C0E) {
-        sentinvPacket = true;
-    }
     if (!(packet instanceof C02)) return true;
     C02 c02 = (C02) packet;
     Entity attackedEntity = c02.entity;
@@ -238,10 +234,6 @@ boolean onPacketSent(CPacket packet) {
         debugData = anticheatPlayers.get(attackedEntity);
     }
     return true;
-}
-
-void onPostMotion() {
-    sentinvPacket = false;
 }
 
 void onRenderTick(float partialTicks) {
