@@ -9,8 +9,6 @@ Map<String, Long> purchases = new HashMap<>();
 Map<String, Boolean> keyStates = new HashMap<>();
 List<String> items = new ArrayList<>();
 List<Integer[]> clickList = new ArrayList<>();
-boolean sentinvPacket = false;
-
 String[] slotNames = {util.color("&cDisabled"), "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 HashSet<String> pickaxeTypes = new HashSet<>(Arrays.asList("wooden_pickaxe", "iron_pickaxe", "golden_pickaxe", "diamond_pickaxe"));
 HashSet<String> axeTypes = new HashSet<>(Arrays.asList("wooden_axe", "stone_axe", "iron_axe", "diamond_axe"));
@@ -124,7 +122,7 @@ void onPreUpdate() {
     }
 
     if (client.getPlayer().getTicksExisted() % 2 == 0) {
-        if (!sentinvPacket && !clickList.isEmpty()) {
+        if (!clickList.isEmpty()) {
             Integer[] click = clickList.remove(0);
             int slot = click[0];
             int hotbarSlot = click[1];
@@ -165,15 +163,4 @@ Map<Integer, ItemStack> createCustomInventory() {
     }
 
     return inv;
-}
-
-void onPostMotion() {
-    sentinvPacket = false;
-}
-
-boolean onPacketSent(CPacket packet) {
-    if (packet instanceof C0E) {
-        sentinvPacket = true;
-    }
-    return true;
 }
