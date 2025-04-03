@@ -4,14 +4,17 @@
 */
 
 Map<Entity, Map<String, Object>> anticheatPlayers = new HashMap<>();
+Map<String, Boolean> reports = new HashMap<>();
 Map<String, Object> debugData = null;
-Entity debugEntity = null;
 String team = "";
 String[] checks = {"NoSlowA", "AutoBlockA", "SprintA", "VelocityA", "RotationA", "ScaffoldA", /* "ScaffoldB",  */"ScaffoldC"};
+long lastReport;
+boolean sentinvPacket;
 
 void onLoad() {
     modules.registerDescription("Unreliable in replays");
     modules.registerButton("Ignore Teammates", true);
+    modules.registerButton("Auto Report", false);
 
     for (String check : checks) {
         modules.registerGroup(check);
@@ -196,21 +199,49 @@ void onPreUpdate() {
         }
     }
 
+    if (client.getServerIP().contains("hypixel") && modules.getButton(scriptName, "Auto Report")) {
+        if (client.allowFlying() && client.time() - lastReport > 10000) {
+            for (Map.Entry<String, Boolean> entry : reports.entrySet()) {
+                if (entry.getValue()) continue;
+
+                client.chat("/wdr " + entry.getKey());
+                lastReport = client.time();
+                reports.put(entry.getKey(), true);
+                break;
+            }
+        }
+
+        if (client.time() - lastReport < 5000 && client.getScreen().equals("GuiChest") && inventory.getChest().equals("Report Cheating/Hacking")) {
+            Map<Integer, ItemStack> inv = createCustomInventory();
+            for (int i = 0; i < inv.size(); i++) {
+                ItemStack item = inv.get(i);
+                if (item == null || !item.displayName.equals(util.color("&aSubmit Report"))) continue;
+                inventory.click(i, 0, 0);
+                break;
+            }
+        }
+    }
+
     if (!modules.getButton(scriptName, "Debug Mode")) {
         debugData = null;
-        debugEntity = null;
     }
 }
 
 boolean onPacketSent(CPacket packet) {
+    if (packet instanceof C0E) {
+        sentinvPacket = true;
+    }
     if (!(packet instanceof C02)) return true;
     C02 c02 = (C02) packet;
     Entity attackedEntity = c02.entity;
     if (attackedEntity != null && attackedEntity.type.equals("EntityOtherPlayerMP") && anticheatPlayers.containsKey(attackedEntity) && modules.getButton(scriptName, "Debug Mode")) {
-        debugEntity = attackedEntity;
         debugData = anticheatPlayers.get(attackedEntity);
     }
     return true;
+}
+
+void onPostMotion() {
+    sentinvPacket = false;
 }
 
 void onRenderTick(float partialTicks) {
@@ -234,20 +265,53 @@ void onWorldJoin(Entity en) {
     if (en == client.getPlayer()) {
         anticheatPlayers.clear();
         debugData = null;
-        debugEntity = null;
     }
+}
+
+Map<Integer, ItemStack> createCustomInventory() {
+    Map<Integer, ItemStack> inv = new HashMap<>();
+    String screen = client.getScreen();
+    int inventorySize = inventory.getSize() - 4, slot = 0;
+
+    if (screen.equals("GuiInventory")) {
+        for (int i = 0; i < 5; i++) {
+            inv.put(slot++, null);
+        }
+
+        Entity player = client.getPlayer();
+        for (int i = 3; i >= 0; i--) {
+            inv.put(slot++, player.getArmorInSlot(i));
+        }
+    }
+
+    if (screen.equals("GuiChest") && !inventory.getChest().isEmpty()) {
+        int chestSize = inventory.getChestSize();
+        for (int i = 0; i < chestSize; i++) {
+            inv.put(slot++, inventory.getStackInChestSlot(i));
+        }
+    }
+
+    for (int i = 9; i < inventorySize + 9; i++) {
+        inv.put(slot++, inventory.getStackInSlot(i % inventorySize));
+    }
+
+    return inv;
 }
 
 void printFlag(Map<String, Object> anticheatPlayer, String flag, int vl) {
     String displayName = (String) anticheatPlayer.getOrDefault("displayName", "&7Unknown");
     String nameColor = displayName.length() >= 2 && displayName.startsWith(util.colorSymbol) ? displayName.substring(0, 2) : util.colorSymbol + "7";
-    String playerName = (String) anticheatPlayer.getOrDefault("name", "Unknown");
+    String playerName = util.strip((String) anticheatPlayer.getOrDefault("name", "Unknown"));
 
     Message msg = new Message(util.color("&8[&cAntiCheat&8] "));
-    msg.appendStyle("CLICK", "RUN_COMMAND", "/wdr " + util.strip(playerName), nameColor + playerName);
+    msg.appendStyle("CLICK", "RUN_COMMAND", "/wdr " + playerName, nameColor + playerName);
     msg.append(util.color(" &7flagged &c" + flag + "&7. &8(&cVL: " + vl + "&8)"));
 
     client.print(msg);
+
+    if (client.getServerIP().contains("hypixel") && modules.getButton(scriptName, "Auto Report")) {
+        reports.put(playerName, false);
+    }
 }
 
 float getMoveYaw(double deltaX, double deltaZ, float playerYaw) {
@@ -345,7 +409,7 @@ void AutoBlockA(Map<String, Object> anticheatPlayer, int cooldown, int vlThresho
             }
         }
     } else {
-        vl = Math.max(vl - 4, 0);
+        vl = Math.max(vl - 5, 0);
     }
 
     anticheatPlayer.put("AutoBlockA_VL", vl);
