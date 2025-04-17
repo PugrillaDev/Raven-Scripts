@@ -1,3 +1,8 @@
+/* 
+    1.8 velocity bypass
+    loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/JumpReset.java"
+*/
+
 boolean setJump, ignoreNext, aiming;
 int lastHurtTime;
 double lastFallDistance;
@@ -15,7 +20,7 @@ void onPreUpdate() {
     boolean onGround = player.onGround();
 
     if (onGround && lastFallDistance > 3 && !client.allowFlying()) ignoreNext = true;
-    
+
     if (hurtTime > lastHurtTime) {
         boolean mouseDown = keybinds.isMouseDown(0) || !modules.getButton(scriptName, "Mouse down");
         boolean aimingAt = aiming || !modules.getButton(scriptName, "Aiming on player");
