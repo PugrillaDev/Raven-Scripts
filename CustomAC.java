@@ -5,10 +5,12 @@
 
 Map<Entity, Map<String, Object>> anticheatPlayers = new HashMap<>();
 Map<String, Boolean> reports = new HashMap<>();
+HashSet<String> history = new HashSet<>();
 Map<String, Object> debugData = null;
 String team = "";
 String[] checks = {"NoSlowA", "AutoBlockA", "SprintA", "VelocityA", "RotationA", "ScaffoldA", /* "ScaffoldB",  */"ScaffoldC"};
 long lastReport;
+Json anticheatConfig, anticheatDataArr;
 
 void onLoad() {
     modules.registerDescription("Unreliable in replays");
@@ -24,6 +26,19 @@ void onLoad() {
     }
 
     modules.registerButton("Debug Mode", false);
+}
+
+void onEnable() {
+    String raw = config.get("anticheat_data");
+    if (raw == null || raw.isEmpty()) {
+        anticheatConfig = Json.object();
+        anticheatDataArr = Json.object();
+        anticheatConfig.add("anticheat_data", anticheatDataArr);
+    } else {
+        anticheatConfig = Json.parse(raw);
+        Json node = anticheatConfig.get("anticheat_data");
+        anticheatDataArr = node.type() == Json.Type.OBJECT ? node : Json.object();
+    }
 }
 
 @SuppressWarnings("unchecked")
@@ -62,6 +77,7 @@ void updatePlayerData(Entity p, Map<String, Object> playerData) {
 
     boolean onGround = p.onGround();
     String name = p.getName();
+    String uuid = p.getUUID();
     String displayName = p.getDisplayName();
     int hurtTime = p.getHurtTime();
     int maxHurtTime = p.getMaxHurtTime();
@@ -79,6 +95,7 @@ void updatePlayerData(Entity p, Map<String, Object> playerData) {
     playerData.put("lastHeldItem", lastHeldItem);
     playerData.put("lastDeltaY", deltaY);
 
+    playerData.put("uuid", uuid);
     playerData.put("name", name);
     playerData.put("displayName", displayName);
     playerData.put("hurtTime", hurtTime);
@@ -172,6 +189,17 @@ void onPreUpdate() {
 
         Map<String, Object> playerData = anticheatPlayers.computeIfAbsent(p, k -> new HashMap<>());
         updatePlayerData(p, playerData);
+        
+        String uuid = (String) playerData.get("uuid");
+        if (!history.contains(uuid) && (int)playerData.get("ticksExisted") > 20) {
+            history.add(uuid);
+            if (uuid.charAt(14) == '4') {
+                Json stored = anticheatDataArr.get(uuid);
+                if (stored.type() == Json.Type.OBJECT) {
+                    printPreviousFlags(playerData, stored);
+                }
+            }
+        }
 
         if (ignoreTeammates) {
             String displayName = p.getDisplayName();
@@ -199,7 +227,7 @@ void onPreUpdate() {
     }
 
     if (client.getServerIP().contains("hypixel") && modules.getButton(scriptName, "Auto Report")) {
-        if (client.allowFlying() && client.time() - lastReport > 10000) {
+        if (client.allowFlying() && client.time() - lastReport > 10000 && client.getScreen().isEmpty() && client.getForward() == 0 && client.getStrafe() == 0) {
             for (Map.Entry<String, Boolean> entry : reports.entrySet()) {
                 if (entry.getValue()) continue;
 
@@ -210,7 +238,7 @@ void onPreUpdate() {
             }
         }
 
-        if (client.time() - lastReport < 5000 && client.getScreen().equals("GuiChest") && inventory.getChest().equals("Report Cheating/Hacking")) {
+        if (player.getTicksExisted() % 5 == 0 && client.time() - lastReport < 5000 && client.time() - lastReport > 300 && client.getScreen().equals("GuiChest") && inventory.getChest().equals("Report Cheating/Hacking")) {
             Map<Integer, ItemStack> inv = createCustomInventory();
             for (int i = 0; i < inv.size(); i++) {
                 ItemStack item = inv.get(i);
@@ -240,7 +268,7 @@ void onRenderTick(float partialTicks) {
     if (debugData == null) return;
     int startX = 10;
     int startY = 10;
-    int lineHeight = render.getFontHeight();
+    int lineHeight = render.getFontHeight() - 1;
     render.text2d(util.color("&cDebug Information:"), startX, startY, 1, 0xFF000000, true);
     int line = 1;
     List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(debugData.entrySet());
@@ -256,6 +284,7 @@ void onRenderTick(float partialTicks) {
 void onWorldJoin(Entity en) {
     if (en == client.getPlayer()) {
         anticheatPlayers.clear();
+        history.clear();
         debugData = null;
     }
 }
@@ -292,18 +321,116 @@ Map<Integer, ItemStack> createCustomInventory() {
 
 void printFlag(Map<String, Object> anticheatPlayer, String flag, int vl) {
     String displayName = (String) anticheatPlayer.getOrDefault("displayName", "&7Unknown");
-    String nameColor = displayName.length() >= 2 && displayName.startsWith(util.colorSymbol) ? displayName.substring(0, 2) : util.colorSymbol + "7";
+    String nameColor = displayName.startsWith(util.colorSymbol) && displayName.length() >= 2 ? displayName.substring(0, 2) : util.colorSymbol + "7";
     String playerName = util.strip((String) anticheatPlayer.getOrDefault("name", "Unknown"));
 
     Message msg = new Message(util.color("&8[&cAntiCheat&8] "));
     msg.appendStyle("CLICK", "RUN_COMMAND", "/wdr " + playerName, nameColor + playerName);
     msg.append(util.color(" &7flagged &c" + flag + "&7. &8(&cVL: " + vl + "&8)"));
-
     client.print(msg);
 
-    if (client.getServerIP().contains("hypixel") && modules.getButton(scriptName, "Auto Report")) {
-        reports.put(playerName, false);
+    if (client.getServerIP().contains("hypixel") && modules.getButton(scriptName, "Auto Report") && !reports.containsKey(playerName)) { 
+        reports.put(playerName, false); 
+        client.log("reporting '" + playerName + "' for " + flag);
     }
+
+    String playerUuid = (String) anticheatPlayer.get("uuid");
+    if (playerUuid == null) {
+        return;
+    }
+
+    Json playerNode = anticheatDataArr.get(playerUuid);
+    if (playerNode.type() != Json.Type.OBJECT) {
+        playerNode = Json.object();
+        anticheatDataArr.add(playerUuid, playerNode);
+    }
+
+    Json eventsArray = playerNode.get(flag);
+    if (eventsArray.type() != Json.Type.ARRAY) {
+        eventsArray = Json.array();
+        playerNode.add(flag, eventsArray);
+    }
+
+    eventsArray.add(Json.object().add("timestamp", client.time()).add("vl", vl));
+    config.set("anticheat_data", anticheatConfig.toString());
+}
+
+void printPreviousFlags(Map<String, Object> playerData, Json stored) {
+    Map<String, Long> latestTs = new HashMap<>();
+
+    for (String flag : stored.keys()) {
+        Json arr = stored.get(flag);
+        if (arr.type() != Json.Type.ARRAY) continue;
+        List<Json> events = arr.asArray();
+        if (events.isEmpty()) continue;
+        latestTs.put(flag, events.get(events.size() - 1).get("timestamp").asLong());
+    }
+
+    List<String> flags = new ArrayList<>(latestTs.keySet());
+    flags.sort(String.CASE_INSENSITIVE_ORDER);
+
+    String displayName = (String) playerData.getOrDefault("displayName", "&7Unknown");
+    String nameColor = displayName.startsWith(util.colorSymbol) && displayName.length() >= 2 ? displayName.substring(0, 2) : util.colorSymbol + "7";
+    String playerName  = util.strip((String) playerData.getOrDefault("name", "Unknown"));
+
+    Message prev = new Message(util.color("&8[&cAntiCheat&8] "));
+    prev.appendStyle("CLICK", "RUN_COMMAND", "/wdr " + playerName, nameColor + playerName);
+    prev.append(util.color(" &7flags: "));
+
+    for (int i = 0; i < flags.size(); i++) {
+        String flag = flags.get(i);
+        long   ts   = latestTs.get(flag);
+
+        if (i > 0) prev.append(" ");
+        prev.appendStyle("HOVER", "SHOW_TEXT", calculateRelativeTimestamp(ts, client.time()) + " ago", util.color("&c" + flag));
+    }
+    client.print(prev);
+}
+
+String calculateRelativeTimestamp(long start, long end) {
+    long timeSince = (end - start) / 1000L;
+    long remainingTime = timeSince;
+
+    long years = remainingTime / 31557600L;
+    remainingTime %= 31557600L;
+    long months = remainingTime / 2629800L;
+    remainingTime %= 2629800L;
+    long days = remainingTime / 86400L;
+    remainingTime %= 86400L;
+    long hours = remainingTime / 3600L;
+    remainingTime %= 3600L;
+    long minutes = remainingTime / 60L;
+    long seconds = remainingTime % 60L;
+
+    StringBuilder msg = new StringBuilder();
+    int componentsAdded = 0;
+
+    if (years > 0 && componentsAdded < 2) {
+        msg.append(years).append("y");
+        componentsAdded++;
+    }
+    if (months > 0 && componentsAdded < 2) {
+        msg.append(months).append("mo");
+        componentsAdded++;
+    }
+    if (days > 0 && componentsAdded < 2) {
+        msg.append(days).append("d");
+        componentsAdded++;
+    }
+    if (hours > 0 && componentsAdded < 2) {
+        msg.append(hours).append("h");
+        componentsAdded++;
+    }
+    if (minutes > 0 && componentsAdded < 2) {
+        msg.append(minutes).append("m");
+        componentsAdded++;
+    }
+    if ((seconds > 0 && componentsAdded < 2) || timeSince == 0) {
+        msg.append(seconds).append("s");
+        componentsAdded++;
+    }
+
+    return msg.toString();
 }
 
 float getMoveYaw(double deltaX, double deltaZ, float playerYaw) {
