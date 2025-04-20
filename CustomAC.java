@@ -356,22 +356,39 @@ void printFlag(Map<String, Object> anticheatPlayer, String flag, int vl) {
 }
 
 void printPreviousFlags(Map<String, Object> playerData, Json stored) {
-    Map<String, Long> latestTs = new HashMap<>();
+    Map<String,long[]> data = new HashMap<>();
 
     for (String flag : stored.keys()) {
         Json arr = stored.get(flag);
         if (arr.type() != Json.Type.ARRAY) continue;
+
+        int threshold = (int) modules.getSlider(scriptName, flag + " VL");
+        int bestVl = 0;
+        long bestTs = 0;
         List<Json> events = arr.asArray();
-        if (events.isEmpty()) continue;
-        latestTs.put(flag, events.get(events.size() - 1).get("timestamp").asLong());
+
+        for (Json ev : events) {
+            if (ev.type() != Json.Type.OBJECT) continue;
+            int vl = ev.get("vl").asInt();
+            if (vl >= threshold && vl > bestVl) {
+                bestVl = vl;
+                bestTs = ev.get("timestamp").asLong();
+            }
+        }
+
+        if (bestVl >= threshold) {
+            data.put(flag, new long[]{ bestVl, bestTs });
+        }
     }
 
-    List<String> flags = new ArrayList<>(latestTs.keySet());
+    if (data.isEmpty()) return;
+
+    List<String> flags = new ArrayList<>(data.keySet());
     flags.sort(String.CASE_INSENSITIVE_ORDER);
 
     String displayName = (String) playerData.getOrDefault("displayName", "&7Unknown");
-    String nameColor = displayName.startsWith(util.colorSymbol) && displayName.length() >= 2 ? displayName.substring(0, 2) : util.colorSymbol + "7";
-    String playerName  = util.strip((String) playerData.getOrDefault("name", "Unknown"));
+    String nameColor = displayName.startsWith(util.colorSymbol) && displayName.length() >= 2 ? displayName.substring(0,2) : util.colorSymbol + "7";
+    String playerName = util.strip((String) playerData.getOrDefault("name", "Unknown"));
 
     Message prev = new Message(util.color("&8[&cAntiCheat&8] "));
     prev.appendStyle("CLICK", "RUN_COMMAND", "/wdr " + playerName, nameColor + playerName);
@@ -379,11 +396,14 @@ void printPreviousFlags(Map<String, Object> playerData, Json stored) {
 
     for (int i = 0; i < flags.size(); i++) {
         String flag = flags.get(i);
-        long   ts   = latestTs.get(flag);
+        long[] info = data.get(flag);
+        int vl = (int) info[0];
+        long ts = info[1];
 
         if (i > 0) prev.append(" ");
-        prev.appendStyle("HOVER", "SHOW_TEXT", calculateRelativeTimestamp(ts, client.time()) + " ago", util.color("&c" + flag));
+        prev.appendStyle("HOVER", "SHOW_TEXT", calculateRelativeTimestamp(ts, client.time()) + " ago\nVL: " + vl, util.color("&c"+flag));
     }
+
     client.print(prev);
 }
 
@@ -482,7 +502,7 @@ void NoSlowA(Map<String, Object> anticheatPlayer, int cooldown, int vlThreshold,
     if (isUsingItem && isSprinting && !isRiding && lastStartUsing - lastItemSwap > 1) {
         boolean isSameItem = true;
         int ticksNotUsing = (int) anticheatPlayer.getOrDefault("lastUsingTick", 0) - (int) anticheatPlayer.getOrDefault("lastStopUsingTick", 0);
-        if (ticksNotUsing <= 5) {
+        if (ticksNotUsing <= 7) {
             ItemStack heldItem = (ItemStack) anticheatPlayer.get("heldItem");
             ItemStack lastStopUsingItem = (ItemStack) anticheatPlayer.get("lastStopUsingItem");
             String heldItemKey = heldItem != null ? heldItem.name + ":" + heldItem.meta : null;
@@ -490,7 +510,7 @@ void NoSlowA(Map<String, Object> anticheatPlayer, int cooldown, int vlThreshold,
             isSameItem = heldItemKey != null && heldItemKey.equals(lastStopUsingItemKey);
         }
 
-        if (ticksNotUsing > 5 || !isSameItem) {
+        if (ticksNotUsing > 7 || !isSameItem) {
             vl++;
             if (vl >= vlThreshold && client.time() - lastAlert > cooldown) {
                 anticheatPlayer.put("NoSlowA_LastAlert", client.time());
