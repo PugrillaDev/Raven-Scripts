@@ -441,8 +441,7 @@ Map<String, Object> parsePing(Json jsonData, String uuid) {
 }
 
 void handlePlayerBlacklist(String uuid, String lobby) {
-    if (pugKey == null || pugKey.isEmpty()) return;
-    else return;
+    /* if (pugKey == null || pugKey.isEmpty()) return;
     client.async(() -> {
         Map<String, Object> playerBlacklist = new ConcurrentHashMap<>();
         try {
@@ -462,7 +461,7 @@ void handlePlayerBlacklist(String uuid, String lobby) {
         }
 
         if (isInOverlay(uuid) && !hasChangedLobby(lobby)) addToOverlay(uuid, playerBlacklist);
-    });
+    }); */
 }
 
 Map<String, Object> parseBlacklist(Json jsonData, String uuid) {
