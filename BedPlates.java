@@ -8,10 +8,8 @@ Map<String, Map<String, Object>> bedPositions = new ConcurrentHashMap<>();
 Map<String, Boolean> searchedBlocks = new ConcurrentHashMap<>();
 Map<String, ItemStack> stacks = new HashMap<>();
 HashSet<Integer> yLevels = new HashSet<>();
-boolean keybindPressed;
 boolean lastPressed;
 boolean display = true;
-int keybind;
 int mode;
 HashSet<String> invalid = new HashSet<>(Arrays.asList(
     "leaves", "water", "lava", 
@@ -50,17 +48,6 @@ HashSet<String> invalid = new HashSet<>(Arrays.asList(
     "anvil" // Utility
 ));
 
-String[] keyNames = {
-    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
-    "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
-    "BACK", "CAPITAL", "COMMA", "DELETE", "DOWN", "END", "ESCAPE", "F1", "F2", "F3", "F4", "F5",
-    "F6", "F7", "HOME", "INSERT", "LBRACKET", "LCONTROL", "LMENU", "LMETA", "LSHIFT", "MINUS",
-    "NUMPAD0", "NUMPAD1", "NUMPAD2", "NUMPAD3", "NUMPAD4", "NUMPAD5", "NUMPAD6", "NUMPAD7",
-    "NUMPAD8", "NUMPAD9", "PERIOD", "RETURN", "RCONTROL", "RSHIFT", "RBRACKET", "SEMICOLON",
-    "SLASH", "SPACE", "TAB", "GRAVE"
-};
-
 int backgroundColor = new Color(37, 37, 43).getRGB();
 int borderColor = new Color(52, 54, 59).getRGB();
 double verticalOffset = 1;
@@ -76,7 +63,7 @@ void onLoad() {
     modules.registerSlider("Render Distance", " blocks", 150, 10, 200, 1);
     modules.registerSlider("Y Offset", " blocks", 1, -10, 10, 0.5);
     modules.registerSlider("Mode", "", 0, new String[]{ "Static", "Toggle", "Hold" });
-    modules.registerSlider("Keybind", "", 0, keyNames);
+    modules.registerKey("Keybind", 0);
 }
 
 ItemStack getStackFromName(String name) {
@@ -99,7 +86,6 @@ void onPreUpdate() {
     autoScale = modules.getButton(scriptName, "Auto Scale");
     alignTop = modules.getButton(scriptName, "Align Top Center");
     mode = (int) modules.getSlider(scriptName, "Mode");
-    keybind = /* keybinds. */keybinds.getKeyIndex(keyNames[(int)modules.getSlider(scriptName, "Keybind")]);
 
     Entity player = client.getPlayer();
     int ticks = player.getTicksExisted();
@@ -125,7 +111,7 @@ void onRenderWorld(float partialTicks) {
 
     if (mode != 0) {
         boolean noGui = client.getScreen().isEmpty();
-        boolean keybindPressed = keybinds.isKeyDown(keybind);
+        boolean keybindPressed = modules.getKeyPressed(scriptName, "Keybind");
 
         if (mode == 1) {
             if (keybindPressed && !lastPressed) {
