@@ -1,13 +1,14 @@
 /* 
     overlay that i never finished because i quit and then game died
-    add your own hypixelKey definition (String hypixelKey = "key") either here or with a loadstring
 */
 
 String hypixelKey;
 String pugKey;
+String urchinKey;
 
 final String useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
+List<Map<String, Object>> alerts = new ArrayList<>();
 Map<String, Map<String, Object>> statsCache = new ConcurrentHashMap<>();
 Map<String, Map<String, Object>> pingCache = new ConcurrentHashMap<>();
 
@@ -65,6 +66,8 @@ void onLoad() {
 
     addTag("nofinaldeaths");
     addTag("language");
+    addTag("bl");
+    addTag("ubl");
     
     registerDefaultButtons(); // don't touch
 }
@@ -72,6 +75,8 @@ void onLoad() {
 void onPlayerAdd(String uuid) {
     handlePlayerStats(uuid, getLobbyId());
     handlePlayerPing(uuid, getLobbyId());
+    handlePlayerBlacklist(uuid, getLobbyId());
+    handleUrchin(uuid, getLobbyId());
 }
 
 void onManualPlayerAdd(String uuid) {
@@ -79,6 +84,8 @@ void onManualPlayerAdd(String uuid) {
     pingCache.remove(uuid);
     handlePlayerStats(uuid, getLobbyId());
     handlePlayerPing(uuid, getLobbyId());
+    handlePlayerBlacklist(uuid, getLobbyId());
+    handleUrchin(uuid, getLobbyId());
 }
 
 void onWorldSwap() {
@@ -86,6 +93,7 @@ void onWorldSwap() {
 }
 
 void handlePlayerStats(String uuid, String lobby) {
+    if (hypixelKey == null || hypixelKey.isEmpty()) return;
     Map<String, Object> cachedStats = statsCache.get(uuid);
     if (cachedStats == null || client.time() > (long) cachedStats.get("cachetime")) {
         if (cachedStats != null) statsCache.remove(uuid);
@@ -96,8 +104,6 @@ void handlePlayerStats(String uuid, String lobby) {
                 Object[] playerStatsRequest = get(url, 3000);
                 if ((int)playerStatsRequest[1] == 200) {
                     playerStats = parseStats((Json)playerStatsRequest[0], uuid);
-                    String n = modules.getButton(scriptName, "Show Ranks") ? (String) playerStats.getOrDefault("usernamewithrank", "") : (String) playerStats.getOrDefault("usernamewithrankcolor", "");
-                    if (!n.isEmpty() && bedwarsStatus() <= 2 && !hasTeamColor(uuid)) playerStats.put(playerKey, n);
                 } else {
                     client.print(getChatPrefix() + "&eHTTP Error &3" + playerStatsRequest[1] + " &ewhile getting stats.");
                     client.log("HTTP Error " + playerStatsRequest[1] + " getting stats on " + uuid);
@@ -113,9 +119,6 @@ void handlePlayerStats(String uuid, String lobby) {
         });
     } else {
         Map<String, Object> dereference = new ConcurrentHashMap<>(cachedStats);
-
-        String n = modules.getButton(scriptName, "Show Ranks") ? (String) dereference.getOrDefault("usernamewithrank", "") : (String) dereference.getOrDefault("usernamewithrankcolor", "");
-        if (!n.isEmpty() && bedwarsStatus() <= 2 && !hasTeamColor(uuid)) dereference.put(playerKey, n);
 
         long lastLogin = ((Number) dereference.get("login")).longValue();
         long lastLogout = ((Number) dereference.get("logout")).longValue();
@@ -138,98 +141,83 @@ void handlePlayerStats(String uuid, String lobby) {
 
 Map<String, Object> parseStats(Json jsonData, String uuid) {
     Map<String, Object> stats = new ConcurrentHashMap<>();
-    
     try {
-        Json data = jsonData.object();
-        if (jsonData.string().equals("{\"success\":true,\"player\":null}") || !data.object("player").exists()) {
+        Json playerNode = jsonData.get("player");
+        if (playerNode.type() != Json.Type.OBJECT) {
             stats.put("nicked", true);
             return stats;
         }
+        Json player = playerNode;
 
-        Json playerObject = data.object("player");
-
-        String username = playerObject.get("displayname", "");
+        String username = player.has("displayname") ? player.get("displayname").asString() : "";
         String formattedRank = getFormattedRank(jsonData);
         String rankColor = formattedRank.substring(0, 2);
         String formattedUsername = formattedRank.length() == 2 ? formattedRank + username : formattedRank + " " + username;
-        String coloredUsername = rankColor + username;
         stats.put("usernamewithrank", formattedUsername);
-        stats.put("usernamewithrankcolor", coloredUsername);
-        
-        boolean hasBedwarsStats = false;
-        if (playerObject.object("stats").exists() && playerObject.object("stats").object("Bedwars").exists()) {
-            hasBedwarsStats = true;
-        }
+        stats.put("usernamewithrankcolor", rankColor + username);
 
-        String language = playerObject.get("userLanguage", "ENGLISH");
-        if (!language.equals("ENGLISH")) {
+        String language = player.has("userLanguage") ? player.get("userLanguage").asString() : "ENGLISH";
+        if (!"ENGLISH".equals(language)) {
             stats.put("language", util.colorSymbol + "3L");
         }
 
-        Json bedwarsObject = hasBedwarsStats ? playerObject.object("stats").object("Bedwars") : new Json("{}");
+        Json statsObj = player.get("stats");
+        Json bw = statsObj.type() == Json.Type.OBJECT && statsObj.get("Bedwars").type() == Json.Type.OBJECT ? statsObj.get("Bedwars") : Json.object();
 
-        int star = (int) Math.floor(expToStars((int)Double.parseDouble(bedwarsObject.get("Experience", "0"))));
-        String coloredStar = getPrestigeColor(star);
+        int experience = bw.has("Experience") ? bw.get("Experience").asInt() : 0;
+        int star = (int) Math.floor(expToStars(experience));
+        stats.put(starKey, getPrestigeColor(star));
+        stats.put(starValue, star);
 
-        double finalKills = Double.parseDouble(bedwarsObject.get("final_kills_bedwars", "0"));
-        double finalDeaths = Double.parseDouble(bedwarsObject.get("final_deaths_bedwars", "0"));
-        if (finalDeaths == 0) stats.put("nofinaldeaths", util.colorSymbol + "5Z");
+        double fk = bw.has("final_kills_bedwars") ? Double.parseDouble(bw.get("final_kills_bedwars").asString()) : 0;
+        double fd = bw.has("final_deaths_bedwars") ? Double.parseDouble(bw.get("final_deaths_bedwars").asString()) : 0;
+        if (fd == 0) stats.put("nofinaldeaths", util.colorSymbol + "5Z");
+        double rawKdr = (fd == 0 ? fk : fk / fd);
+        double kdr = rawKdr < 10 ? util.round(rawKdr, 2) : util.round(rawKdr, 1);
+        stats.put(fkdrKey, getFkdrColor(formatDoubleStr(kdr)));
+        stats.put(fkdrValue, kdr);
 
-        double fkdr = finalDeaths == 0 ? finalKills : finalKills / finalDeaths < 10 ? util.round(finalKills / finalDeaths, 2) : util.round(finalKills / finalDeaths, 1);
-        double index = star * Math.pow(fkdr, 2);
-        String coloredFkdr = getFkdrColor(formatDoubleStr(fkdr));
-    
-        long lastLogin = Long.parseLong(playerObject.get("lastLogin", "0"));
-        long lastLogout = Long.parseLong(playerObject.get("lastLogout", "0"));
+        double index = star * Math.pow(kdr, 2);
+        stats.put(indexValue, index);
+
+        long lastLogin = player.has("lastLogin") ? player.get("lastLogin").asLong() : 0L;
+        long lastLogout = player.has("lastLogout") ? player.get("lastLogout").asLong() : 0L;
         stats.put("login", lastLogin);
         stats.put("logout", lastLogout);
-        boolean statusOn = lastLogin != 0;
-        String coloredSession = util.colorSymbol + "cAPI";
-        if (statusOn) {
+        boolean online = lastLogin != 0;
+        String sessionColor = util.colorSymbol + "cAPI";
+        if (online) {
             if (lastLogin - lastLogout > -2000) {
                 lastLogout = client.time();
-                coloredSession = calculateRelativeTimestamp(lastLogin, lastLogout);
-                coloredSession = getSessionColor(lastLogin, lastLogout, coloredSession);
+                String rel = calculateRelativeTimestamp(lastLogin, lastLogout);
+                sessionColor = getSessionColor(lastLogin, lastLogout, rel);
             } else {
-                coloredSession = util.colorSymbol + "cOFFLINE";
+                sessionColor = util.colorSymbol + "cOFFLINE";
             }
         }
-
-        String winstreakMode = parseWinstreakMode((int)modules.getSlider(scriptName, "Winstreak Mode"));
-        boolean winstreaksDisabled = Integer.parseInt(bedwarsObject.get("games_played_bedwars_1", "0")) > 0 && bedwarsObject.get(winstreakMode + "winstreak", "").isEmpty();
-        int winstreak = 0;
-        if (winstreaksDisabled) {
-            // check external api
-        } else {
-            winstreak = Integer.parseInt(bedwarsObject.get(winstreakMode + "winstreak", "0"));
-        }
-        String coloredWinstreak = getWinstreakColor(String.valueOf(winstreak));
-
-        boolean highWinstreak = winstreak > 50;
-
-        stats.put(starKey, coloredStar);
-        stats.put(starValue, star);
-        stats.put(fkdrKey, coloredFkdr);
-        stats.put(fkdrValue, fkdr);
-        stats.put(winstreakKey, coloredWinstreak);
-        stats.put(winstreakValue, winstreak);
-        stats.put(sessionKey, coloredSession);
+        stats.put(sessionKey, sessionColor);
         stats.put(sessionValue, lastLogin * -1);
-        stats.put(indexValue, index);
-        stats.put(tagsKey, "");
-        long CACHE_DURATION = highWinstreak ? 600000 : Math.max(300, Math.min(86400, 60 * (60 * ((int) finalDeaths / 120)))) * 1000L;
-        stats.put("cachetime", client.time() + CACHE_DURATION);
+
+        String mode = parseWinstreakMode((int) modules.getSlider(scriptName, "Winstreak Mode"));
+        boolean disabled = bw.has("games_played_bedwars_1") && bw.get("games_played_bedwars_1").asInt() > 0 && !bw.has(mode + "winstreak");
+        int ws = disabled ? 0 : bw.has(mode + "winstreak") ? bw.get(mode + "winstreak").asInt() : 0;
+        stats.put(winstreakKey, getWinstreakColor(String.valueOf(ws)));
+        stats.put(winstreakValue, ws);
+
+        boolean highWs = ws > 50;
+        long duration = highWs ? 600000L : Math.max(300, Math.min(86400, 60 * (60 * ((int) fd / 120)))) * 1000L;
+        stats.put("cachetime", client.time() + duration);
         statsCache.put(uuid, stats);
     } catch (Exception e) {
-        client.log("Error in parseStats function on " + uuid + ": " + e);
+        client.log("Error in parseStats on " + uuid + ": " + e);
         client.print(getChatPrefix() + "&eError detected. Please check &3latest.log&e.");
         stats.put("error", true);
     }
-
     return stats;
 }
 
 void handlePlayerPing(String uuid, String lobby) {
+    if (pugKey == null || pugKey.isEmpty()) return;
     Map<String, Object> cachedPing = pingCache.get(uuid);
     if (cachedPing == null || client.time() > (long) cachedPing.get("cachetime")) {
         if (cachedPing != null) pingCache.remove(uuid);
@@ -259,31 +247,319 @@ void handlePlayerPing(String uuid, String lobby) {
     }
 }
 
+void handleUrchin(String uuid, String lobby) {
+    if (urchinKey == null || urchinKey.isEmpty()) return;
+    client.async(() -> {
+        Map<String, Object> playerData = new ConcurrentHashMap<>();
+        try {
+            String url = "http://urchin.ws/cubelify?id=" + toDashedUUID(uuid) + "&name=placeholder&sources=GAME&key=" + urchinKey;
+            Object[] playerDataRequest = get(url, 10000);
+            if ((int)playerDataRequest[1] == 200) {
+                playerData = parseUrchin((Json)playerDataRequest[0], uuid);
+            } else {
+                client.print(getChatPrefix() + "&eHTTP Error &3" + playerDataRequest[1] + " &ewhile getting urchin data.");
+                client.log("HTTP Error " + playerDataRequest[1] + " getting urchin data on " + uuid);
+                playerData.put("error", true);
+            }
+        } catch (Exception e) {
+            client.print(getChatPrefix() + "&eRuntime error while retrieving urchin data.");
+            client.log("Runtime error getting urchin data on " + uuid + ": " + e);
+            playerData.put("error", true);
+        }
+
+        if (isInOverlay(uuid) && !hasChangedLobby(lobby)) addToOverlay(uuid, playerData);
+    });
+}
+
+Map<String, Object> parseUrchin(Json jsonData, String uuid) {
+    Map<String, Object> urchinData = new ConcurrentHashMap<>();
+
+    try {
+        Json tagsNode = jsonData.get("tags");
+        if (tagsNode.type() != Json.Type.ARRAY) {
+            return urchinData;
+        }
+
+        List<Json> tags = tagsNode.asArray();
+        if (tags.isEmpty()) {
+            return urchinData;
+        }
+
+        Map<String, Object> playerData = overlayPlayers.get(uuid);
+        if (playerData == null) {
+            return urchinData;
+        }
+
+        String username = util.color(playerData.get("username").toString() + "&r");
+
+        for (Json tag : tags) {
+            String icon = tag.has("icon") ? tag.get("icon").asString() : "";
+            if (!blacklistIcons.contains(icon)) {
+                continue;
+            }
+
+            String tooltip = tag.has("tooltip") ? tag.get("tooltip").asString() : "Unknown reason";
+            tooltip = tooltip.replace("&", "and").replace("\n", " ");
+            String parsedTooltip = parseTooltip(tooltip);
+
+            client.print(chatPrefix + "&3" + username + "&7: " + parsedTooltip);
+
+            String ubl = parsedTooltip.length() >= 3 ? parsedTooltip.substring(0, 3) : parsedTooltip;
+            urchinData.put("ubl", util.color(ubl));
+            urchinData.put(tagsKey, "");
+            break;
+        }
+
+    } catch (Exception e) {
+        client.log("Error in parseUrchin: " + e);
+        client.print(chatPrefix + " &eError detected. Please check &3latest.log&e.");
+        client.log(jsonData.toString());
+    }
+
+    return urchinData;
+}
+
+Map<String, String> LABEL_COLORS = new HashMap<>();
+{
+    LABEL_COLORS.put("Sniper", "&c");
+    LABEL_COLORS.put("Possible Sniper", "&c");
+    LABEL_COLORS.put("Legit Sniper", "&c");
+    LABEL_COLORS.put("Confirmed Cheater", "&4");
+    LABEL_COLORS.put("Blatant Cheater", "&6");
+    LABEL_COLORS.put("Closet Cheater", "&6");
+    LABEL_COLORS.put("Caution", "&6");
+    LABEL_COLORS.put("Account", "&6");
+    LABEL_COLORS.put("Info", "&f");
+}
+        
+HashSet<String> blacklistIcons = new HashSet<>(Arrays.asList(
+    "mdi-alert-octagram",
+    "mdi-alert-octagram-outline",
+    "mdi-alert-rhombus-outline",     
+    "mdi-information-outline",   
+    "mdi-target-variant",           
+    "mdi-alert-decagram",  
+    "mdi-alert-decagram-outline", 
+    "mdi-account-alert"       
+));
+
+String parseTooltip(String tooltip) {
+    int open = tooltip.indexOf('(');
+    int close = (open != -1) ? tooltip.indexOf(')', open) : -1;
+    String mainLabel = tooltip, username = "", time = "", reason = "";
+    
+    if (open != -1 && close > open) {
+        mainLabel = tooltip.substring(0, open).trim();
+        String parenthetical = tooltip.substring(open + 1, close).trim();
+        String extra = tooltip.substring(close + 1).trim();
+        if (extra.startsWith("-")) {
+            extra = extra.substring(1).trim();
+        }
+        
+        if (parenthetical.startsWith("Added by ")) {
+            String[] parts = parenthetical.substring(9).trim().split("\\s+");
+            if (parts.length >= 3 && "ago".equalsIgnoreCase(parts[parts.length - 1])) {
+                username = parts[0];
+                time = parts[1];
+            }
+        } else if (parenthetical.startsWith("Added ")) {
+            String content = parenthetical.substring(6).trim();
+            if (content.contains(" - ")) {
+                String[] splitParts = content.split(" - ", 2);
+                String[] tokens = splitParts[0].trim().split("\\s+");
+                if (tokens.length >= 2 && "ago".equalsIgnoreCase(tokens[1])) {
+                    time = tokens[0];
+                }
+                reason = splitParts[1].trim();
+            } else {
+                String[] tokens = content.split("\\s+");
+                if (tokens.length >= 2 && "ago".equalsIgnoreCase(tokens[1])) {
+                    time = tokens[0];
+                }
+            }
+        }
+        
+        if (!extra.isEmpty()) {
+            reason = reason.isEmpty() ? extra : reason + " - " + extra;
+        }
+    }
+    
+    String color = LABEL_COLORS.getOrDefault(mainLabel, "&7");
+    return new StringBuilder()
+           .append(color).append(mainLabel).append("&r")
+           .append(username.isEmpty() ? "" : " &eby&3 " + username)
+           .append(reason.isEmpty() ? "" : " &e-&7 " + reason)
+           .append(time.isEmpty() ? "" : " &e(&d" + time + "&e)")
+           .toString().trim();
+}
+
+String toDashedUUID(String uuidStr) {
+    return uuidStr.substring(0, 8) + "-" +
+           uuidStr.substring(8, 12) + "-" +
+           uuidStr.substring(12, 16) + "-" +
+           uuidStr.substring(16, 20) + "-" +
+           uuidStr.substring(20, 32);
+}
+
 Map<String, Object> parsePing(Json jsonData, String uuid) {
     Map<String, Object> pingdata = new ConcurrentHashMap<>();
 
     try {
-        Json data = jsonData.object();
-        List<Json> array = data.array("data");
-        if (array.size() == 0) {
+        List<Json> array = jsonData.get("data").asArray();
+
+        if (array.isEmpty()) {
             pingdata.put("ping", "");
             return pingdata;
         }
 
-        Json endObject = array.get(0);
-        int ping = Integer.parseInt(endObject.get("avg"));
+        int count = Math.min(array.size(), 7);
+        int sum = 0;
+
+        for (int i = 0; i < count; i++) {
+            Json entry = array.get(i);
+            try {
+                sum += entry.get("avg").asInt();
+            } catch (Exception e) {
+                count--;
+            }
+        }
+
+        int ping = (count > 0 ? sum / count : 0);
 
         String coloredPing = getPingColor(String.valueOf(ping));
         pingdata.put(pingValue, ping);
         pingdata.put(pingKey, coloredPing);
-        pingdata.put("cachetime", client.time() + 1800000);
+        pingdata.put("cachetime", client.time() + 1800000L);
         pingCache.put(uuid, pingdata);
+
     } catch (Exception e) {
-        client.log("Error in parsePing function: " + e);
+        client.log("Error in parsePing: " + e);
         client.print("&eError detected. Please check &3latest.log&e.");
     }
 
     return pingdata;
+}
+
+void handlePlayerBlacklist(String uuid, String lobby) {
+    if (pugKey == null || pugKey.isEmpty()) return;
+    client.async(() -> {
+        Map<String, Object> playerBlacklist = new ConcurrentHashMap<>();
+        try {
+            String url = "https://privatemethod.xyz/api/blacklist/check?key=" + pugKey + "&uuid=" + uuid;
+            Object[] playerBlacklistRequest = get(url, 3000);
+            if ((int)playerBlacklistRequest[1] == 200) {
+                playerBlacklist = parseBlacklist((Json)playerBlacklistRequest[0], uuid);
+            } else {
+                client.print(getChatPrefix() + "&eHTTP Error &3" + playerBlacklistRequest[1] + " &ewhile getting blacklist.");
+                client.log("HTTP Error " + playerBlacklistRequest[1] + " getting blacklist on " + uuid);
+                playerBlacklist.put("error", true);
+            }
+        } catch (Exception e) {
+            client.print(getChatPrefix() + "&eRuntime error while getting blacklist.");
+            client.log("Runtime error getting blacklist on " + uuid + ": " + e);
+            playerBlacklist.put("error", true);
+        }
+
+        if (isInOverlay(uuid) && !hasChangedLobby(lobby)) addToOverlay(uuid, playerBlacklist);
+    });
+}
+
+Map<String, Object> parseBlacklist(Json jsonData, String uuid) {
+    Map<String, Object> blacklistData = new ConcurrentHashMap<>();
+    try {
+        Json blField = jsonData.get("blacklisted");
+        boolean blacklisted = blField.type() == Json.Type.BOOLEAN && blField.asBoolean();
+        if (!blacklisted) {
+            return blacklistData;
+        }
+
+        List<Json> entries = jsonData.get("data").asArray();
+        if (entries.isEmpty()) {
+            return blacklistData;
+        }
+
+        Json highest = entries.get(0);
+        for (Json entry : entries) {
+            int threat = entry.has("threat") ? entry.get("threat").asInt() : 0;
+            int highestThreat = highest.has("threat") ? highest.get("threat").asInt() : 0;
+            if (threat > highestThreat) {
+                highest = entry;
+            } else if (threat == highestThreat) {
+                long ts = entry.has("timestamp") ? entry.get("timestamp").asLong() : Long.MAX_VALUE;
+                long highestTs = highest.has("timestamp") ? highest.get("timestamp").asLong() : Long.MAX_VALUE;
+                if (ts < highestTs) {
+                    highest = entry;
+                }
+            }
+        }
+
+        int threat = highest.get("threat").asInt();
+        String blacklister = highest.get("discord_username").asString();
+        long timeAdded = highest.get("timestamp").asLong();
+        String timeAgo = calculateRelativeTimestamp(timeAdded, client.time());
+        String type = convertType(threat);
+        String color = getBlacklistColor(threat);
+        if (color == null || type == null) {
+            return blacklistData;
+        }
+
+        Map<String, Object> playerData = overlayPlayers.get(uuid);
+        if (playerData == null) {
+            return blacklistData;
+        }
+        String username = util.color(playerData.get("username").toString() + "&r");
+
+        String reason = highest.has("reason") ? highest.get("reason").asString().trim() : "";
+        if (reason.isEmpty()) {
+            reason = "No reason provided";
+        }
+
+        String payload = new StringBuilder()
+            .append(color).append(type).append("&r")
+            .append(" &eby &3").append(blacklister)
+            .append(" &e- &7").append(reason.isEmpty() ? "No reason provided" : reason)
+            .append(" &e(&d").append(timeAgo).append("&e)")
+            .toString();
+
+        client.print(getChatPrefix() + "&3" + username + "&7: " + payload);
+
+        addAlert(util.color("&lLazify Overlay"), util.color(username + " &7blacklisted for " + color + type + "&7."), 8000, "");
+        if (threat >= 3) {
+            client.ping();
+        }
+
+        blacklistData.put("blacklisted", true);
+        blacklistData.put("bl", color + type.substring(0, 1).toUpperCase());
+        blacklistData.put(tagsKey, "");
+    } catch (Exception e) {
+        client.log("Error in parseBlacklist: " + e);
+        client.print(getChatPrefix() + " &eError detected. Please check &3latest.log&e.");
+    }
+    return blacklistData;
+}
+
+String convertType(int type) {
+    switch (type) {
+        case 6: return "sniper";
+        case 5: return "cheater";
+        case 4: return "beamed";
+        case 3: return "risky";
+        case 2: return "bot";
+        case 1: return "annoying";
+        default: return null;
+    }
+}
+
+String getBlacklistColor(int type) {
+    switch (type) {
+        case 6: return util.colorSymbol + "4";
+        case 5: return util.colorSymbol + "c";
+        case 4: return util.colorSymbol + "6";
+        case 3: return util.colorSymbol + "6";
+        case 2: return util.colorSymbol + "e";
+        case 1: return util.colorSymbol + "e";
+        default: return null;
+    }
 }
 
 String getPingColor(String ping) {
@@ -339,77 +615,106 @@ double expToStars(int exp) {
 }
 
 String getRank(Json playerData) {
-    if (playerData == null) return null;
-    if (!playerData.object("player").exists()) {
+    if (playerData == null) {
+        return null;
+    }
+    Json player = playerData.get("player");
+    if (player.type() != Json.Type.OBJECT) {
         return null;
     }
 
-    Json player = playerData.object("player");
-    
-    String prefix = player.get("prefix", null);
-    if (prefix != null) {
-        return prefix.replace("§", util.colorSymbol);
+    if (player.has("prefix")) {
+        String prefix = player.get("prefix").asString();
+        if (!prefix.isEmpty()) {
+            return prefix.replace("§", util.colorSymbol);
+        }
     }
 
-    String rank = player.get("rank", null);
-    if (rank != null) {
-        if (rank.equals("GAME_MASTER")) return "GM";
-        if (rank.equals("YOUTUBER")) return "YOUTUBE";
-        if (!rank.equals("NORMAL")) return rank;
+    if (player.has("rank")) {
+        String rank = player.get("rank").asString();
+        if ("STAFF".equals(rank)) {
+            return "\u12DE";
+        }
+        if ("YOUTUBER".equals(rank)) {
+            return "YOUTUBE";
+        }
+        if (!"NORMAL".equals(rank)) {
+            return rank;
+        }
     }
 
-    String packageRank = player.get("newPackageRank", player.get("packageRank", null));
-
-    if (packageRank == null || packageRank.equals("NONE")) return null;
-    if (packageRank.startsWith("MVP")) {
-        return player.get("monthlyPackageRank", "").equals("SUPERSTAR") ? "MVP++" : packageRank.length() == 3 ? packageRank : "MVP+";
+    String pkg = null;
+    if (player.has("newPackageRank") && !player.get("newPackageRank").asString().isEmpty()) {
+        pkg = player.get("newPackageRank").asString();
+    } else if (player.has("packageRank")) {
+        pkg = player.get("packageRank").asString();
     }
-    if (packageRank.startsWith("VIP")) {
-        return packageRank.length() == 3 ? packageRank : "VIP+";
+    if (pkg == null || "NONE".equals(pkg)) {
+        return null;
+    }
+    if (pkg.startsWith("MVP")) {
+        if (player.has("monthlyPackageRank") && "SUPERSTAR".equals(player.get("monthlyPackageRank").asString())) {
+            return "MVP++";
+        }
+        return pkg.length() == 3 ? pkg : "MVP+";
+    }
+    if (pkg.startsWith("VIP")) {
+        return pkg.length() == 3 ? pkg : "VIP+";
     }
 
     return null;
 }
 
 String getFormattedRank(Json playerData) {
-    String colorCode = util.colorSymbol + "7";
-    if (playerData == null) return colorCode;
+    String defaultColor = util.color("&7");
+    if (playerData == null) {
+        return defaultColor;
+    }
     String rank = getRank(playerData);
+    if (rank == null) {
+        return defaultColor;
+    }
+    Json player = playerData.get("player");
+    String plusColor = player.has("rankPlusColor") ? player.get("rankPlusColor").asString() : "RED";
 
-    if (rank == null) return colorCode;
-
-    Json player = playerData.object("player");
-    String plusColor = player.get("rankPlusColor", "RED");
-
+    String colorCode;
     switch (plusColor) {
-        case "BLACK": colorCode = util.colorSymbol + "0"; break;
-        case "DARK_BLUE": colorCode = util.colorSymbol + "1"; break;
-        case "DARK_GREEN": colorCode = util.colorSymbol + "2"; break;
-        case "DARK_AQUA": colorCode = util.colorSymbol + "3"; break;
-        case "DARK_RED": colorCode = util.colorSymbol + "4"; break;
-        case "DARK_PURPLE": colorCode = util.colorSymbol + "5"; break;
-        case "GOLD": colorCode = util.colorSymbol + "6"; break;
-        case "GRAY": colorCode = util.colorSymbol + "7"; break;
-        case "DARK_GRAY": colorCode = util.colorSymbol + "8"; break;
-        case "BLUE": colorCode = util.colorSymbol + "9"; break;
-        case "GREEN": colorCode = util.colorSymbol + "a"; break;
-        case "AQUA": colorCode = util.colorSymbol + "b"; break;
-        case "RED": colorCode = util.colorSymbol + "c"; break;
-        case "LIGHT_PURPLE": colorCode = util.colorSymbol + "d"; break;
-        case "YELLOW": colorCode = util.colorSymbol + "e"; break;
-        case "WHITE": colorCode = util.colorSymbol + "f"; break;
+        case "BLACK": colorCode = "&0"; break;
+        case "DARK_BLUE": colorCode = "&1"; break;
+        case "DARK_GREEN": colorCode = "&2"; break;
+        case "DARK_AQUA": colorCode = "&3"; break;
+        case "DARK_RED": colorCode = "&4"; break;
+        case "DARK_PURPLE": colorCode = "&5"; break;
+        case "GOLD": colorCode = "&6"; break;
+        case "GRAY": colorCode = "&7"; break;
+        case "DARK_GRAY": colorCode = "&8"; break;
+        case "BLUE": colorCode = "&9"; break;
+        case "GREEN": colorCode = "&a"; break;
+        case "AQUA": colorCode = "&b"; break;
+        case "RED": colorCode = "&c"; break;
+        case "LIGHT_PURPLE": colorCode = "&d"; break;
+        case "YELLOW": colorCode = "&e"; break;
+        case "WHITE": colorCode = "&f"; break;
+        default: colorCode = "&7";
     }
 
     switch (rank) {
-        case "VIP": return util.colorSymbol + "a[VIP]";
-        case "VIP+": return util.colorSymbol + "a[VIP" + util.colorSymbol + "6+" + util.colorSymbol + "a]";
-        case "MVP": return util.colorSymbol + "b[MVP]";
-        case "MVP+": return util.colorSymbol + "b[MVP" + colorCode + "+" + util.colorSymbol + "b]";
-        case "MVP++": return util.colorSymbol + "6[MVP" + colorCode + "++" + util.colorSymbol + "6]";
-        case "GM": return util.colorSymbol + "2[GM]";
-        case "YOUTUBE": return util.colorSymbol + "c[" + util.colorSymbol + "fYOUTUBE" + util.colorSymbol + "c]";
-        case "ADMIN": return util.colorSymbol + "c[ADMIN]";
-        default: return rank;
+        case "VIP":
+            return util.color("&a[VIP]");
+        case "VIP+":
+            return util.color("&a[VIP&6+&a]");
+        case "MVP":
+            return util.color("&b[MVP]");
+        case "MVP+":
+            return util.color("&b[MVP" + colorCode + "+" + "&b]");
+        case "MVP++":
+            return util.color("&6[MVP" + colorCode + "++&6]");
+        case "YOUTUBE":
+            return util.color("&c[&fYOUTUBE&c]");
+        case "\u12DE":
+            return util.color("&c[&6\u12DE&c]");
+        default:
+            return rank;
     }
 }
 
@@ -424,23 +729,23 @@ String getWinstreakColor(String winstreak) {
     }
 
     if (realwinstreak >= 1000) {
-        return util.colorSymbol + '5' + realwinstreak;
+        return util.color("&5") + realwinstreak;
     } else if (realwinstreak >= 500) {
-        return util.colorSymbol + 'd' + realwinstreak;
+        return util.color("&d") + realwinstreak;
     } else if (realwinstreak >= 300) {
-        return util.colorSymbol + '4' + realwinstreak;
+        return util.color("&4") + realwinstreak;
     } else if (realwinstreak >= 150) {
-        return util.colorSymbol + 'c' + realwinstreak;
+        return util.color("&c") + realwinstreak;
     } else if (realwinstreak >= 100) {
-        return util.colorSymbol + '6' + realwinstreak;
+        return util.color("&6") + realwinstreak;
     } else if (realwinstreak >= 75) {
-        return util.colorSymbol + 'e' + realwinstreak;
+        return util.color("&e") + realwinstreak;
     } else if (realwinstreak >= 50) {
-        return util.colorSymbol + '2' + realwinstreak;
+        return util.color("&2") + realwinstreak;
     } else if (realwinstreak >= 25) {
-        return util.colorSymbol + 'a' + realwinstreak;
+        return util.color("&a") + realwinstreak;
     } else {
-        return util.colorSymbol + '7' + realwinstreak;
+        return util.color("&7") + realwinstreak;
     }
 }
 
@@ -448,42 +753,42 @@ String getSessionColor(long lastLogin, long lastLogout, String sessionFormatted)
     long session = lastLogout - lastLogin;
 
     if (session > 21600000) {
-        return util.colorSymbol + '4' + sessionFormatted;
+        return util.color("&4") + sessionFormatted;
     } else if (session > 14400000) {
-        return util.colorSymbol + 'c' + sessionFormatted;
+        return util.color("&c") + sessionFormatted;
     } else if (session > 9000000) {
-        return util.colorSymbol + '6' + sessionFormatted;
+        return util.color("&6") + sessionFormatted;
     } else if (session > 7200000) {
-        return util.colorSymbol + 'e' + sessionFormatted;
+        return util.color("&e") + sessionFormatted;
     } else if (session > 1200000) {
-        return util.colorSymbol + 'a' + sessionFormatted;
+        return util.color("&a") + sessionFormatted;
     } else if (session > 600000) {
-        return util.colorSymbol + 'e' + sessionFormatted;
+        return util.color("&e") + sessionFormatted;
     } else if (session > 300000) {
-        return util.colorSymbol + 'e' + sessionFormatted;
+        return util.color("&e") + sessionFormatted;
     } else if (session > 150000) {
-        return util.colorSymbol + 'c' + sessionFormatted;
+        return util.color("&c") + sessionFormatted;
     } else {
-        return util.colorSymbol + '4' + sessionFormatted;
+        return util.color("&4") + sessionFormatted;
     }
 }
 
 String getFkdrColor(String fkdr) {
     double realfkdr = Double.parseDouble(fkdr);
     if (realfkdr > 1000) {
-        return util.colorSymbol + '5' + fkdr;
+        return util.color("&5") + fkdr;
     } else if (realfkdr > 100) {
-        return util.colorSymbol + '4' + fkdr;
+        return util.color("&4") + fkdr;
     } else if (realfkdr > 10) {
-        return util.colorSymbol + 'c' + fkdr;
+        return util.color("&c") + fkdr;
     } else if (realfkdr > 5) {
-        return util.colorSymbol + '6' + fkdr;
+        return util.color("&6") + fkdr;
     } else if (realfkdr > 2.4) {
-        return util.colorSymbol + 'e' + fkdr;
+        return util.color("&e") + fkdr;
     } else if (realfkdr > 1.4) {
-        return util.colorSymbol + 'f' + fkdr;
+        return util.color("&f") + fkdr;
     } else {
-        return util.colorSymbol + '7' + fkdr;
+        return util.color("&7") + fkdr;
     }
 }
 
@@ -544,112 +849,242 @@ String calculateRelativeTimestamp(long lastLogin, long lastLogout) {
 }
 
 String getPrestigeColor(int number) {
-    int prestige = number - number % 100;
-    String nums = String.format("%04d", number);
-
-    if (prestige >= 5000) {
-        return util.color("&4" + nums.charAt(0) + "&5" + nums.charAt(1) + "&9" + nums.charAt(2) + nums.charAt(3));
+    int prestige = (number / 100) * 100;
+    String nums = "", result;
+    if (prestige >= 1000) {
+        nums = String.format("%04d", number);
     }
-
     switch (prestige) {
-        case 5000:
-            return util.color("&4" + nums.charAt(0) + "&5" + nums.charAt(1) + "&9" + nums.charAt(2) + nums.charAt(3));
-        case 4900:
-            return util.color("&a" + nums.charAt(0) + "&f" + nums.charAt(1) + nums.charAt(2) + "&a" + nums.charAt(3));
-        case 4800:
-            return util.color("&5" + nums.charAt(0) + "&c" + nums.charAt(1) + "&6" + nums.charAt(2) + "&e" + nums.charAt(3));
-        case 4700:
-            return util.color("&f" + nums.charAt(0) + "&4" + nums.charAt(1) + nums.charAt(2) + "&9" + nums.charAt(3));
-        case 4600:
-            return util.color("&2" + nums.charAt(0) + "&b" + nums.charAt(1) + nums.charAt(2) + "&6" + nums.charAt(3));
-        case 4500:
-            return util.color("&f" + nums.charAt(0) + "&b" + nums.charAt(1) + nums.charAt(2) + "&2" + nums.charAt(3));
-        case 4400:
-            return util.color("&2" + nums.charAt(0) + "&a" + nums.charAt(1) + "&e" + nums.charAt(2) + "&6" + nums.charAt(3));
-        case 4300:
-            return util.color("&0" + nums.charAt(0) + "&5" + nums.charAt(1) + nums.charAt(2) + "&5" + nums.charAt(3));
-        case 4200:
-            return util.color("&1" + nums.charAt(0) + "&9" + nums.charAt(1) + "&3" + nums.charAt(2) + "&f" + nums.charAt(3));
-        case 4100:
-            return util.color("&e" + nums.charAt(0) + "&6" + nums.charAt(1) + "&c" + nums.charAt(2) + "&d" + nums.charAt(3));
-        case 4000:
-            return util.color("&5" + nums.charAt(0) + "&c" + nums.charAt(1) + nums.charAt(2) + "&6" + nums.charAt(3));
-        case 3900:
-            return util.color("&c" + nums.charAt(0) + "&a" + nums.charAt(1) + nums.charAt(2) + "&3" + nums.charAt(3));
-        case 3800:
-            return util.color("&1" + nums.charAt(0) + "&9" + nums.charAt(1) + nums.charAt(2) + "&5" + nums.charAt(3));
-        case 3700:
-            return util.color("&4" + nums.charAt(0) + "&c" + nums.charAt(1) + nums.charAt(2) + "&b" + nums.charAt(3));
-        case 3600:
-            return util.color("&a" + nums.charAt(0) + nums.charAt(1) + "&b" + nums.charAt(2) + "&9" + nums.charAt(3));
-        case 3500:
-            return util.color("&c" + nums.charAt(0) + "&4" + nums.charAt(1) + nums.charAt(2) + "&2" + nums.charAt(3));
-        case 3400:
-            return util.color("&2" + nums.charAt(0) + "&a" + nums.charAt(1) + nums.charAt(2) + "&5" + nums.charAt(3));
-        case 3300:
-            return util.color("&9" + nums.charAt(0) + nums.charAt(1) + "&d" + nums.charAt(2) + "&c" + nums.charAt(3));
-        case 3200:
-            return util.color("&c" + nums.charAt(0) + "&7" + nums.charAt(1) + nums.charAt(2) + "&4" + nums.charAt(3));
-        case 3100:
-            return util.color("&9" + nums.charAt(0) + "&2" + nums.charAt(1) + nums.charAt(2) + "&6" + nums.charAt(3));
-        case 3000:
-            return util.color("&e" + nums.charAt(0) + "&6" + nums.charAt(1) + "&c" + nums.charAt(2) + "&4" + nums.charAt(3));
-        case 2900:
-            return util.color("&b" + nums.charAt(0) + "&3" + nums.charAt(1) + nums.charAt(2) + "&9" + nums.charAt(3));
-        case 2800:
-            return util.color("&a" + nums.charAt(0) + "&2" + nums.charAt(1) + nums.charAt(2) + "&6" + nums.charAt(3));
-        case 2700:
-            return util.color("&e" + nums.charAt(0) + "&f" + nums.charAt(1) + nums.charAt(2) + "&8" + nums.charAt(3));
-        case 2600:
-            return util.color("&4" + nums.charAt(0) + "&c" + nums.charAt(1) + nums.charAt(2) + "&d" + nums.charAt(3));
-        case 2500:
-            return util.color("&f" + nums.charAt(0) + "&a" + nums.charAt(1) + nums.charAt(2) + "&2" + nums.charAt(3));
-        case 2400:
-            return util.color("&b" + nums.charAt(0) + "&f" + nums.charAt(1) + nums.charAt(2) + "&7" + nums.charAt(3));
-        case 2300:
-            return util.color("&5" + nums.charAt(0) + "&d" + nums.charAt(1) + nums.charAt(2) + "&6" + nums.charAt(3));
-        case 2200:
-            return util.color("&6" + nums.charAt(0) + "&f" + nums.charAt(1) + nums.charAt(2) + "&b" + nums.charAt(3));
-        case 2100:
-            return util.color("&f" + nums.charAt(0) + "&e" + nums.charAt(1) + nums.charAt(2) + "&6" + nums.charAt(3));
-        case 2000:
-            return util.color("&7" + nums.charAt(0) + "&f" + nums.charAt(1) + nums.charAt(2) + "&7" + nums.charAt(3));
-        case 1000:
-            return util.color("&c" + nums.charAt(0) + "&6" + nums.charAt(1) + "&e" + nums.charAt(2) + "&a" + nums.charAt(3));
-        case 1900:
-        case 900:
-            return util.color("&5" + number);
-        case 1800:
-        case 800:
-            return util.color("&9" + number);
-        case 1700:
-        case 700:
-            return util.color("&d" + number);
-        case 1600:
-            return util.color("&c" + number);
-        case 600:
-            return util.color("&4" + number);
-        case 1500:
-        case 500:
-            return util.color("&3" + number);
-        case 1400:
-        case 400:
-            return util.color("&2" + number);
-        case 1300:
-        case 300:
-            return util.color("&b" + number);
-        case 1200:
-        case 200:
-            return util.color("&6" + number);
-        case 1100:
+        case 0:
+            result = "&7[" + number + "\u272B]";
+            break;
         case 100:
-            return util.color("&f" + number);
+            result = "&f[" + number + "\u272B]";
+            break;
+        case 200:
+            result = "&6[" + number + "\u272B]";
+            break;
+        case 300:
+            result = "&b[" + number + "\u272B]";
+            break;
+        case 400:
+            result = "&2[" + number + "\u272B]";
+            break;
+        case 500:
+            result = "&3[" + number + "\u272B]";
+            break;
+        case 600:
+            result = "&4[" + number + "\u272B]";
+            break;
+        case 700:
+            result = "&d[" + number + "\u272B]";
+            break;
+        case 800:
+            result = "&9[" + number + "\u272B]";
+            break;
+        case 900:
+            result = "&5[" + number + "\u272B]";
+            break;
+        case 1000: {
+            result = "&c[&6" + nums.charAt(0) + "&e" + nums.charAt(1)
+                   + "&a" + nums.charAt(2) + "&b" + nums.charAt(3)
+                   + "&d\u272B&5]";
+            break;
+        }
+        case 1100:
+            result = "&7[&f" + number + "&7\u272A]";
+            break;
+        case 1200:
+            result = "&7[&e" + number + "&6\u272A&7]";
+            break;
+        case 1300:
+            result = "&7[&b" + number + "&3\u272A&7]";
+            break;
+        case 1400:
+            result = "&7[&a" + number + "&2\u272A&7]";
+            break;
+        case 1500:
+            result = "&7[&3" + number + "&9\u272A&7]";
+            break;
+        case 1600:
+            result = "&7[&c" + number + "&4\u272A&7]";
+            break;
+        case 1700:
+            result = "&7[&d" + number + "&5\u272A&7]";
+            break;
+        case 1800:
+            result = "&7[&9" + number + "&1\u272A&7]";
+            break;
+        case 1900:
+            result = "&7[&5" + number + "&8\u272A&7]";
+            break;
+        case 2000: {
+            result = "&8[&7" + nums.charAt(0) + "&f" + nums.charAt(1)
+                   + nums.charAt(2) + "&7" + nums.charAt(3) + "\u272A&8]";
+            break;
+        }
+        case 2100: {
+            result = "&f[" + nums.charAt(0) + "&e" + nums.charAt(1)
+                   + nums.charAt(2) + "&6" + nums.charAt(3) + "&l\u269D&r&6]";
+            break;
+        }
+        case 2200: {
+            result = "&6[" + nums.charAt(0) + "&f" + nums.charAt(1)
+                   + nums.charAt(2) + "&b" + nums.charAt(3) + "&3&l\u269D&r&3]";
+            break;
+        }
+        case 2300: {
+            result = "&5[" + nums.charAt(0) + "&d" + nums.charAt(1)
+                   + nums.charAt(2) + "&6" + nums.charAt(3) + "&e&l\u269D&r&e]";
+            break;
+        }
+        case 2400: {
+            result = "&b[" + nums.charAt(0) + "&f" + nums.charAt(1)
+                   + nums.charAt(2) + "&7" + nums.charAt(3) + "&l\u269D&r&8]";
+            break;
+        }
+        case 2500: {
+            result = "&f[" + nums.charAt(0) + "&a" + nums.charAt(1)
+                   + nums.charAt(2) + "&2" + nums.charAt(3) + "&l\u269D&r&2]";
+            break;
+        }
+        case 2600: {
+            result = "&4[" + nums.charAt(0) + "&c" + nums.charAt(1)
+                   + nums.charAt(2) + "&d" + nums.charAt(3) + "&l\u269D&r&d]";
+            break;
+        }
+        case 2700: {
+            result = "&e[" + nums.charAt(0) + "&f" + nums.charAt(1)
+                   + nums.charAt(2) + "&8" + nums.charAt(3) + "&l\u269D&r&8]";
+            break;
+        }
+        case 2800: {
+            result = "&a[" + nums.charAt(0) + "&2" + nums.charAt(1)
+                   + nums.charAt(2) + "&6" + nums.charAt(3) + "&l\u269D&r&e]";
+            break;
+        }
+        case 2900: {
+            result = "&b[" + nums.charAt(0) + "&3" + nums.charAt(1)
+                   + nums.charAt(2) + "&9" + nums.charAt(3) + "&l\u269D&r&1]";
+            break;
+        }
+        case 3000: {
+            result = "&e[" + nums.charAt(0) + "&6" + nums.charAt(1)
+                   + nums.charAt(2) + "&c" + nums.charAt(3) + "&l\u269D&r&4]";
+            break;
+        }
+        case 3100: {
+            result = "&9[" + nums.charAt(0) + "&2" + nums.charAt(1)
+                   + nums.charAt(2) + "&6" + nums.charAt(3) + "&l\u2725&r&e]";
+            break;
+        }
+        case 3200: {
+            result = "&c[&4" + nums.charAt(0) + "&7" + nums.charAt(1)
+                   + nums.charAt(2) + "&4" + nums.charAt(3) + "&c&l\u2725&r&c]";
+            break;
+        }
+        case 3300: {
+            result = "&9[" + nums.charAt(0) + "" + nums.charAt(1)
+                   + "&d" + nums.charAt(2) + "&c" + nums.charAt(3) + "&l\u2725&r&4]";
+            break;
+        }
+        case 3400: {
+            result = "&2[&a" + nums.charAt(0) + "&d" + nums.charAt(1)
+                   + nums.charAt(2) + "&5" + nums.charAt(3) + "&l\u2725&r&2]";
+            break;
+        }
+        case 3500: {
+            result = "&c[" + nums.charAt(0) + "&4" + nums.charAt(1)
+                   + nums.charAt(2) + "&2" + nums.charAt(3) + "&a&l\u2725&r&a]";
+            break;
+        }
+        case 3600: {
+            result = "&a[" + nums.charAt(0) + "" + nums.charAt(1)
+                   + "&b" + nums.charAt(2) + "&9" + nums.charAt(3) + "&l\u2725&r&1]";
+            break;
+        }
+        case 3700: {
+            result = "&4[" + nums.charAt(0) + "&c" + nums.charAt(1)
+                   + nums.charAt(2) + "&b" + nums.charAt(3) + "&3&l\u2725&r&3]";
+            break;
+        }
+        case 3800: {
+            result = "&1[" + nums.charAt(0) + "&9" + nums.charAt(1)
+                   + "&5" + nums.charAt(2) + nums.charAt(3) + "&d&l\u2725&r&1]";
+            break;
+        }
+        case 3900: {
+            result = "&c[" + nums.charAt(0) + "&a" + nums.charAt(1)
+                   + nums.charAt(2) + "&3" + nums.charAt(3) + "&9&l\u2725&r&9]";
+            break;
+        }
+        case 4000: {
+            result = "&5[" + nums.charAt(0) + "&c" + nums.charAt(1)
+                   + nums.charAt(2) + "&6" + nums.charAt(3) + "&l\u2725&r&e]";
+            break;
+        }
+        case 4100: {
+            result = "&e[" + nums.charAt(0) + "&6" + nums.charAt(1)
+                   + nums.charAt(2) + "&d" + nums.charAt(3) + "&l\u2725&r&5]";
+            break;
+        }
+        case 4200: {
+            result = "&1[&9" + nums.charAt(0) + "&3" + nums.charAt(1)
+                   + nums.charAt(2) + "&b" + nums.charAt(3) + "&7&l\u2725&r&7]";
+            break;
+        }
+        case 4300: {
+            result = "&0[&5" + nums.charAt(0) + "&8" + nums.charAt(1)
+                   + nums.charAt(2) + "&5" + nums.charAt(3) + "&l\u2725&r&0]";
+            break;
+        }
+        case 4400: {
+            result = "&2[" + nums.charAt(0) + "&a" + nums.charAt(1)
+                   + nums.charAt(2) + "&e" + nums.charAt(3) + "&5&l\u2725&r&d]";
+            break;
+        }
+        case 4500: {
+            result = "&f[" + nums.charAt(0) + "&b" + nums.charAt(1)
+                   + nums.charAt(2) + "&2" + nums.charAt(3) + "&l\u2725&r&2]";
+            break;
+        }
+        case 4600: {
+            result = "&2[&b" + nums.charAt(0) + "&e" + nums.charAt(1)
+                   + nums.charAt(2) + "&6" + nums.charAt(3) + "&l\u2725&r&5]";
+            break;
+        }
+        case 4700: {
+            result = "&f[" + nums.charAt(0) + "&c" + nums.charAt(1)
+                   + nums.charAt(2) + "&9" + nums.charAt(3) + "&1&l\u2725&r&9]";
+            break;
+        }
+        case 4800: {
+            result = "&5[" + nums.charAt(0) + "&c" + nums.charAt(1)
+                   + "&6" + nums.charAt(2) + "&e" + nums.charAt(3) + "&b&l\u2725&r&3]";
+            break;
+        }
+        case 4900: {
+            result = "&2[&a" + nums.charAt(0) + "&f" + nums.charAt(1)
+                   + nums.charAt(2) + "&a" + nums.charAt(3) + "&l\u2725&r&2]";
+            break;
+        }
+        case 5000: {
+            result = "&4[" + nums.charAt(0) + "&5" + nums.charAt(1)
+                   + "&9" + nums.charAt(2) + nums.charAt(3)
+                   + "&1&l\u2725&r&0]";
+            break;
+        }
         default:
-            return util.color("&7" + number);
+            if (prestige > 5000) {
+                result = "&4[" + nums.charAt(0) + "&5" + nums.charAt(1)
+                        + "&9" + nums.charAt(2) + nums.charAt(3)
+                        + "&1&l\u2725&r&0]";
+                break;
+            }
+            result = "&7[" + number + "\u272B]";
     }
+    return util.color(result);
 }
-
-
 
 
 
@@ -695,6 +1130,8 @@ boolean didwho = false;
 boolean ascending = false;
 boolean showYourself = false;
 boolean showTeamPrefix = false;
+boolean showRank;
+boolean lastRank, lastTeam, lastTeamPrefix;
 boolean showTeamColors = false;
 boolean showHeads = false;
 String sortBy;
@@ -743,6 +1180,7 @@ void defaultSettings() {
     showHeads = modules.getButton(scriptName, "Player Heads");
     showYourself = modules.getButton(scriptName, "Show Yourself");
     showTeamPrefix = modules.getButton(scriptName, "Team Prefix");
+    showRank = modules.getButton(scriptName, "Show Ranks");
     showTeamColors = modules.getButton(scriptName, "Teams");
     if (overlayPlayers.size() > 1 && (modules.getSlider(scriptName, "Sort Mode") == 0 ? true : false) != ascending) {
         ascending = modules.getSlider(scriptName, "Sort Mode") == 0 ? true : false;
@@ -762,6 +1200,13 @@ void defaultSettings() {
     headsSize = ((float)render.getFontHeight() - 1f * textScale) * textScale;
     offsetY = 3f * textScale;
     lineHeight = fontHeight + offsetY;
+
+    if (showRank != lastRank || showTeamColors != lastTeam || showTeamPrefix != lastTeamPrefix) {
+        doColumns(false);
+    }
+    lastRank = showRank;
+    lastTeam = showTeamColors;
+    lastTeamPrefix = showTeamPrefix;
 }
 
 boolean isInOverlay(String uuid) {
@@ -801,7 +1246,7 @@ void addPlaceholderStats(String player, String username, boolean doName) {
             placeholderStats.put(key, getSeenColor(1));
             continue;
         } else if (key.equals(playerKey)) {
-            if (doName) placeholderStats.put(key, util.colorSymbol + "7" + username);
+            if (doName) placeholderStats.put(key, util.color("&7") + username);
             continue;
         } else if (key.equals(headsKey)) {
             if (showHeads) {
@@ -823,6 +1268,20 @@ void addPlaceholderStats(String player, String username, boolean doName) {
 void onEnable() {
     if (!firstEnable) {
         client.print(getChatPrefix() + "&eWelcome to &3Lazify&e! Please run &3/ov&e for commands.");
+
+        pugKey = config.get("lazify_pugkey");
+        urchinKey = config.get("lazify_urchinkey");
+        hypixelKey = config.get("lazify_hypixelkey");
+        if (pugKey == null || pugKey.isEmpty()) {
+            client.print(getChatPrefix() + "&cNo Pug API key detected.");
+        }
+        if (urchinKey == null || urchinKey.isEmpty()) {
+            client.print(getChatPrefix() + "&cNo Urchin API key detected.");
+        }
+        if (hypixelKey == null || hypixelKey.isEmpty()) {
+            client.print(getChatPrefix() + "&cNo Hypixel API key detected.");
+        }
+
         firstEnable = true;
     }
     overlayTicks = 5;
@@ -832,6 +1291,9 @@ void onEnable() {
 }
 
 void onPreUpdate() {
+    if (!alerts.isEmpty() && !bridge.has("pugalert")) {
+        bridge.add("pugalert", alerts.remove(0));
+    }
 
     updateStatus();
 
@@ -849,6 +1311,7 @@ void onPreUpdate() {
             final long currentTime = client.time();
             final String uuid = pla.getUUID().replace("-", "");
             final String displayName = pla.getDisplayName();
+            if (displayName.startsWith(util.colorSymbol + "k")) continue;
             final String username = pla.getName();
             if (ignoredPlayers.containsKey(username.toLowerCase())) {
                 if (isInOverlay(uuid)) {
@@ -860,14 +1323,12 @@ void onPreUpdate() {
             currentEntityUUIDs.add(uuid);
             if (isBot(pla)) continue;
             if (isInOverlay(uuid)) {
-                if (showTeamColors && status == 3 && teams.size() != overlayPlayers.size()) {
-                    if (!teams.containsKey(uuid) && displayName.contains(" ")) {
-                        teams.put(uuid, displayName);
-                        Map<String, Object> theTeamName = new HashMap<>();
-                        String nameteam = showTeamPrefix == true ? displayName : displayName.split(" ")[1];
-                        theTeamName.put(playerKey, nameteam);
-                        addToOverlay(uuid, theTeamName);
-                    }
+                if (status == 3 && !teams.containsKey(uuid) && displayName.contains(" ")) {
+                    teams.put(uuid, displayName);
+                    Map<String, Object> theTeamName = new HashMap<>();
+                    theTeamName.put("displayprefix", displayName);
+                    theTeamName.put("displaynoprefix", displayName.split(" ")[1]);
+                    addToOverlay(uuid, theTeamName);
                 }
                 continue;
             }
@@ -888,11 +1349,12 @@ void onPreUpdate() {
             placeholderStats.put(encountersKey, formattedencounter);
             placeholderStats.put(encountersValue, encounters.size());
             placeholderStats.put(playerKey, displayName);
+            placeholderStats.put("username", username);
 
             if (uuid.charAt(12) != '4') {
                 placeholderStats.put(joinValue, (int) (client.time() / 1000) * -1);
                 placeholderStats.put("nicked", true);
-                placeholderStats.put(playerKey, username);
+                placeholderStats.put(playerKey, util.color("&e" + username));
                 placeholderStats.put(headsKey, defaultHead);
                 overlayPlayers.put(uuid, placeholderStats);
                 sortOverlay();
@@ -941,9 +1403,9 @@ void onRenderTick(float partialTicks) {
 
     float radius = (float)modules.getSlider(scriptName, "Corner Radius");
 
-    render.bloom.prepare();
+    /* render.bloom.prepare();
     render.roundedRect(startX + 1, startY + 1, endX - 1, endY - 1, radius, new Color(0, 0, 0).getRGB());
-    render.bloom.apply(3, 2);
+    render.bloom.apply(3, 2); */
 
     render.roundedRect(startX, startY, endX, endY, radius, new Color(43, 45, 49).getRGB());
     render.roundedRect(startX, startY, endX, startY + lineHeight + offsetY / 2f, radius, new Color(37, 37, 43).getRGB());
@@ -975,6 +1437,7 @@ void onRenderTick(float partialTicks) {
             continue;
         }
         boolean isNicked = (Boolean) playerStats.getOrDefault("nicked", false);
+        boolean isBlacklisted = (Boolean) playerStats.getOrDefault("blacklisted", false);
         boolean isError = (Boolean) playerStats.getOrDefault("error", false);
         
         for (Map<String, Object> column : columns) {
@@ -1004,14 +1467,35 @@ void onRenderTick(float partialTicks) {
                 case playerKey:
                     if (isNicked && !teams.containsKey(uuid)) {
                         statValue = util.colorSymbol + 'e' + stringStatValue.replaceAll(util.colorSymbol + ".", "");
+                        break;
                     }
                     if (isError && (statValue == null || stringStatValue.isEmpty() || stringStatValue.equals(util.colorSymbol + "7-"))) {
                         statValue = util.colorSymbol + "4E";
+                        break;
                     }
                     if (statValue == null || stringStatValue.isEmpty()) {
                         overlayPlayers.remove(uuid);
                         continue;
                     }
+                    if (showTeamColors && status == 3) {
+                        Object name = showTeamPrefix ? playerStats.get("displayprefix") : playerStats.get("displaynoprefix");
+                        if (name != null) {
+                            statValue = name;
+                        }
+                    } else if (showRank) {
+                        Object name = playerStats.get("usernamewithrank");
+                        if (name != null) {
+                            statValue = name;
+                        }
+                    } else {
+                        Object name = playerStats.get("usernamewithrankcolor");
+                        if (name != null) {
+                            statValue = name;
+                        }
+                    }
+                    /* if (isBlacklisted) {
+                        statValue = util.color("&4" + util.strip(statValue.toString()));
+                    } */
                     break;
                 case tagsKey:
                     if (stringStatValue.isEmpty()) {
@@ -1111,7 +1595,10 @@ boolean onPacketSent(CPacket packet) {
                 "&3/ov clearhidden&e: Clears the hidden player list.",
                 "&3/ov hide [username]&e: Hides player from the overlay.",
                 "&3/ov reload&e: Reloads the players displayed on the overlay.",
-                "&3/ov sc [username]&e: Manually adds a player to the overlay."
+                "&3/ov sc [username]&e: Manually adds a player to the overlay.",
+                "&3/ov hypixelkey [key]&e: Updates the hypixel api key.",
+                "&3/ov pugkey [key]&e: Updates the pug api key.",
+                "&3/ov urchinkey [key]&e: Updates the urchin api key."
             };
 
             int maxPixelWidth = 0;
@@ -1189,6 +1676,7 @@ boolean onPacketSent(CPacket packet) {
 
                     Map<String, Object> manual = new ConcurrentHashMap<>();
                     manual.put("manual", true);
+                    manual.put("username", username);
                     addToOverlay(uuid, manual);
 
                     onManualPlayerAdd(uuid);
@@ -1215,13 +1703,48 @@ boolean onPacketSent(CPacket packet) {
             Map<String, Map<String, Object>> players = new ConcurrentHashMap<>(overlayPlayers);
             clearMaps();
             for (String player : players.keySet()) {
+                if (player.charAt(12) != '4') {
+                    addToOverlay(player, players.get(player));
+                    continue;
+                }
                 addPlaceholderStats(player, players.get(player).get(playerKey).toString(), true);
                 addToPlayers(player);
                 onPlayerAdd(player);
+                Map<String, Object> fix = new ConcurrentHashMap<>();
+                fix.put("username", players.get(player).get("username").toString());
+                addToOverlay(player, fix);
             }
             overlayTicks = 5;
             String msg = getChatPrefix() + "&eReloaded &3" + players.size() + "&e player" + (players.size() != 1 ? "s" : "") + ".";
             client.print(msg);
+            return false;
+        } else if (command.equalsIgnoreCase("clear")) {
+            Map<String, Map<String, Object>> players = new ConcurrentHashMap<>(overlayPlayers);
+            clearMaps();
+            overlayTicks = 5;
+            String msg = getChatPrefix() + "&eCleared &3" + players.size() + "&e player" + (players.size() != 1 ? "s" : "") + ".";
+            client.print(msg);
+            return false;
+        } else if (command.equals("pugkey") || command.equals("hypixelkey") || command.equals("urchinkey")) {
+            if (parts.length < 3 || parts[2].trim().isEmpty()) {
+                client.print(getChatPrefix() + "&eInvalid syntax. Use &3/ov " + command + " [key]&e.");
+                return false;
+            }
+
+            String newKey = parts[2].trim();
+            String cfgKey  = "lazify_" + command;
+
+            switch (command) {
+                case "pugkey": pugKey = newKey; break;
+                case "hypixelkey": hypixelKey = newKey; break;
+                case "urchinkey": urchinKey = newKey; break;
+            }
+
+            if (config.set(cfgKey, newKey)) {
+                client.print(getChatPrefix() + "&a" + command + " updated successfully.");
+            } else {
+                client.print(getChatPrefix() + "&cFailed to save " + command + ".");
+            }
             return false;
         }
     }
@@ -1236,6 +1759,15 @@ String generatePadding(char character, int pixelWidth) {
         builder.append(character);
     }
     return builder.toString();
+}
+
+void addAlert(String title, String message, int duration, String command) {
+    Map<String, Object> alert = new HashMap<>();
+    alert.put("title", title);
+    alert.put("message", message);
+    alert.put("duration", duration);
+    alert.put("command", command);
+    alerts.add(alert);
 }
 
 void onWorldJoin(Entity entity) {
@@ -1315,18 +1847,27 @@ boolean containsDigit(String s) {
 }
 
 String[] convertPlayer(String player) {
-    boolean isUUID = player.length() < 37 && (player.length() == 32 && player.charAt(12) == '4') || (player.length() == 36 && player.charAt(14) == '4');
-    String url = isUUID ? "https://sessionserver.mojang.com/session/minecraft/profile/" + player : "https://api.mojang.com/users/profiles/minecraft/" + player;
+    boolean isUUID =
+        (player.length() == 32 && player.charAt(12) == '4') ||
+        (player.length() == 36 && player.charAt(14) == '4');
+    String url = isUUID
+        ? "https://sessionserver.mojang.com/session/minecraft/profile/" + player
+        : "https://api.mojang.com/users/profiles/minecraft/" + player;
+
     try {
         Object[] conversionResponse = get(url, 3000);
-        if ((int)conversionResponse[1] == 200) {
-            Json jsonData = (Json)conversionResponse[0];
-            String uuid = jsonData.get("id", "");
-            String username2 = jsonData.get("name", "");
+        int status = (int) conversionResponse[1];
+        if (status == 200) {
+            Json jsonData = (Json) conversionResponse[0];
+            String uuid = jsonData.has("id")
+                ? jsonData.get("id").asString()
+                : "";
+            String username2 = jsonData.has("name")
+                ? jsonData.get("name").asString()
+                : "";
             return new String[] { uuid, username2 };
         } else {
-            //client.print(getChatPrefix() + "&eHTTP Error &3" + conversionResponse[1] + " &ewhile getting uuid.");
-            client.log("HTTP Error " + conversionResponse[1] + " getting uuid on " + player);
+            client.log("HTTP Error " + status + " getting uuid on " + player);
             return new String[] { "", "" };
         }
     } catch (Exception e) {
@@ -1340,15 +1881,19 @@ String[] convertPlayerPlayerdb(String player) {
     String url = "https://playerdb.co/api/player/minecraft/" + player;
     try {
         Object[] conversionResponse = get(url, 3000);
-        if ((int)conversionResponse[1] == 200) {
-            Json jsonData = (Json)conversionResponse[0];
-            Json thing = jsonData.object().object("data").object("player");
-            String uuid = thing.get("raw_id", "");
-            String username2 = thing.get("username", "");
+        int status = (int) conversionResponse[1];
+        if (status == 200) {
+            Json jsonData = (Json) conversionResponse[0];
+            Json playerJson = jsonData.get("data").get("player");
+            String uuid = playerJson.has("raw_id")
+                ? playerJson.get("raw_id").asString()
+                : "";
+            String username2 = playerJson.has("username")
+                ? playerJson.get("username").asString()
+                : "";
             return new String[] { uuid, username2 };
         } else {
-            //client.print(getChatPrefix() + "&eHTTP Error &3" + conversionResponse[1] + " &ewhile getting uuid.");
-            client.log("HTTP Error " + conversionResponse[1] + " getting uuid on " + player);
+            client.log("HTTP Error " + status + " getting uuid on " + player);
             return new String[] { "", "" };
         }
     } catch (Exception e) {
@@ -1359,7 +1904,7 @@ String[] convertPlayerPlayerdb(String player) {
 }
 
 Object[] get(String url, int timeout) {
-    Json jsonData = new Json("{}");
+    Json jsonData = Json.object();
     try {
         Request request = new Request("GET", url);
         request.setConnectTimeout(timeout);
@@ -1561,7 +2106,7 @@ void doColumns(boolean updateEnabled) {
 
             Object statValueObj = playerData.get(statKey);
             if (statValueObj == null) continue;
-            String statValue;
+            String statValue = "";
 
             if (statKey.equals(tagsKey)) {
                 StringBuilder statValueBuilder = new StringBuilder();
@@ -1571,6 +2116,26 @@ void doColumns(boolean updateEnabled) {
                     statValueBuilder.append(tagObj.toString());
                 }
                 statValue = statValueBuilder.length() > 0 ? statValueBuilder.toString() : "";
+            } else if (statKey.equals(playerKey)) {
+                if (showTeamColors && status == 3) {
+                    Object name = showTeamPrefix ? playerData.get("displayprefix") : playerData.get("displaynoprefix");
+                    if (name != null) {
+                        statValue = name.toString();
+                    }
+                } else if (showRank) {
+                    Object name = playerData.get("usernamewithrank");
+                    if (name != null) {
+                        statValue = name.toString();
+                    }
+                } else {
+                    Object name = playerData.get("usernamewithrankcolor");
+                    if (name != null) {
+                        statValue = name.toString();
+                    }
+                }
+                if (statValue.isEmpty()) {
+                    statValue = statValueObj.toString();
+                }
             } else {
                 statValue = statValueObj.toString();
             }
