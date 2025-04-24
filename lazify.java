@@ -441,6 +441,7 @@ Map<String, Object> parsePing(Json jsonData, String uuid) {
 }
 
 void handlePlayerBlacklist(String uuid, String lobby) {
+    return;
     if (pugKey == null || pugKey.isEmpty()) return;
     client.async(() -> {
         Map<String, Object> playerBlacklist = new ConcurrentHashMap<>();
