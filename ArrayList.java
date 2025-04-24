@@ -39,7 +39,7 @@ void onLoad() {
     modules.registerSlider("Color 2 - Blue", "", 255, 0, 255, 1);
     modules.registerSlider("Background Opacity", "", 0, 0, 255, 1);
 
-    modules.registerSlider("Mode", "Mode", 0, new String[]{"Static", util.color("&cR&6a&ei&an&bb&do&5w"), util.color("&4G&cr&5a&bd&3i&9e&1n&1t")});
+    modules.registerSlider("Mode", "", 0, new String[]{"Static", util.color("&cR&6a&ei&an&bb&do&5w"), util.color("&4G&cr&5a&bd&3i&9e&1n&1t")});
     modules.registerSlider("Direction", "", 1, new String[]{"Up", "Down"});
     modules.registerSlider("Wave Speed", "s", 5, 0.1, 10, 0.1);
 
