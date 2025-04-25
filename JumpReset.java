@@ -25,7 +25,7 @@ void onPreUpdate() {
         boolean mouseDown = keybinds.isMouseDown(0) || !modules.getButton(scriptName, "Mouse down");
         boolean aimingAt = aiming || !modules.getButton(scriptName, "Aiming on player");
         boolean forward = keybinds.isKeyDown(keybinds.getKeyCode("forward")) || !modules.getButton(scriptName, "Moving forward");
-        if (!ignoreNext && onGround && aimingAt && forward && mouseDown && util.randomDouble(0, 100) < modules.getSlider(scriptName, "Chance") && !hasBadEffect()) {
+        if (!ignoreNext && onGround && aimingAt && forward && mouseDown && !player.isBurning() && util.randomDouble(0, 100) < modules.getSlider(scriptName, "Chance") && !hasBadEffect()) {
             keybinds.setPressed("jump", setJump = true);
         }
         ignoreNext = false;
