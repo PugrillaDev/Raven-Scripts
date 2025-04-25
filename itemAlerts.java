@@ -238,7 +238,7 @@ void doAlerts(Entity player, ItemStack item, int slot) {
 
         if (slot == 2 && armorPieceNames.contains(itemName)) {
             String existingArmor = existingData.getOrDefault("armorpiece", "").toString();
-            if (!existingArmor.isEmpty() && !existingArmor.equals(itemName)) {
+            if (!existingArmor.equals(itemName)) {
                 String coloredName = util.colorSymbol + teamColor + player.getName();
                 String armorDisplayColor = itemDisplayColors.get(itemName);
                 String msg = chatPrefix + "&eAlert: " + coloredName + " &7purchased&r " + armorDisplayColor + "&r&7";
