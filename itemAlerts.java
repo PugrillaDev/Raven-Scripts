@@ -127,6 +127,7 @@ void setupItems() {
     addDisplayName("Devastator Bow");
     addDisplayName("Miracle of the Stars");
     addDisplayName("Mystic Mirror");
+
     addArmorPiece("chainmail_leggings");
     addArmorPiece("iron_leggings");
     addArmorPiece("diamond_leggings");
