@@ -121,7 +121,7 @@ void onPreUpdate() {
         clickItem(item, hotbarSlot);
     }
 
-    if (client.getPlayer().getTicksExisted() % 2 == 0) {
+    if (client.getPlayer().getTicksExisted() % 3 == 0) {
         if (!clickList.isEmpty()) {
             Integer[] click = clickList.remove(0);
             int slot = click[0];
