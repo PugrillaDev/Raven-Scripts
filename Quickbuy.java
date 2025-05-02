@@ -46,6 +46,7 @@ void registerItem(String item, String displayName) {
 }
 
 void onLoad() {
+    modules.registerSlider("Purchase Delay", "ms", 100, 100, 400, 50);
     setupItems();
     for (String item : items) {
         String displayName = itemDisplayNames.get(item);
@@ -121,7 +122,7 @@ void onPreUpdate() {
         clickItem(item, hotbarSlot);
     }
 
-    if (client.getPlayer().getTicksExisted() % 2 == 0) {
+    if (client.getPlayer().getTicksExisted() % (int) (modules.getSlider(scriptName, "Purchase Delay") / 50) == 0) {
         if (!clickList.isEmpty()) {
             Integer[] click = clickList.remove(0);
             int slot = click[0];
