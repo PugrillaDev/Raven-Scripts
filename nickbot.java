@@ -7,10 +7,12 @@ static final String NICK_CLAIM_COMMAND = "/nick actuallyset ";
 final String chatPrefix = "&7[&dN&7]&r ";
 long lastSentLimbo = client.time();
 long lastSentNick = client.time();
-boolean enabled = false;
-boolean startup = false;
+boolean enabled;
+boolean startup;
+boolean wait;
 int INTERVAL = 20;
 int counter = 0;
+String currentNick = "";
 List<String> containsList = new ArrayList<>();
 List<String> startsWithList = new ArrayList<>();
 List<String> endsWithList = new ArrayList<>();
@@ -93,9 +95,27 @@ void onPreUpdate() {
     }
 }
 
+boolean onChat(String message) {
+    String msg = util.strip(message);
+    if (wait && msg.startsWith("You are now nicked as ")) {
+        currentNick = msg.substring(22, msg.length() - 1);
+        wait = false;
+        enabled = true;
+        client.print(chatPrefix + "&eCurrent nick set to &3" + currentNick + "&e.");
+        client.print(chatPrefix + "&eNickbot has been " + (enabled ? "&aenabled" : "&cdisabled") + "&e.");
+        return false;
+    } else if (wait && msg.equals("Processing request. Please wait...")) {
+        return false;
+    } else if (msg.equals("Generating a unique random name. Please wait...")) {
+        return false;
+    }
+    return true;
+}
+
 boolean isGood(String nick) {
     String lower = nick.toLowerCase();
 
+    if (currentNick.toLowerCase().equals(lower)) return false;
     if (modules.getButton(scriptName, "4 Letters") && nick.length() == 4) return true;
     if (modules.getButton(scriptName, "N Word") && lower.contains("nickherr")) return true;
     
@@ -207,9 +227,15 @@ boolean onPacketSent(CPacket packet) {
         String command = parts[1];
 
         if (command.equalsIgnoreCase("toggle")) {
-            enabled = !enabled;
-            counter = 0;
-            client.print(chatPrefix + "&eNickbot has been " + (enabled ? "&aenabled" : "&cdisabled") + "&e.");
+            if (enabled) {
+                enabled = false;
+                client.print(chatPrefix + "&eNickbot has been " + (enabled ? "&aenabled" : "&cdisabled") + "&e.");
+            } else {
+                wait = true;
+                counter = 0;
+                client.chat("/nick reuse");
+                client.print(chatPrefix + "&eFetching current nick...");
+            }
             return false;
         } else if (command.equalsIgnoreCase("test")) {
             if (parts.length < 3) {
