@@ -47,12 +47,16 @@ boolean onChat(String message) {
                 if (bedPosition != null) {
                     client.print(prefix + "&aBed found.");
                 } else {
-                    client.chat("/bedwars");
+                    disconnect();
                     client.print(prefix + "&cFailed to find bed.");
                 }
             });
-        } else if (disconnecting && msg.startsWith("A disconnect occurred in your connection")) {
-            disconnecting = false;
+        } else if (disconnecting && (
+                msg.startsWith("A disconnect occurred in your connection") ||
+                msg.startsWith("Unknown command.") ||
+                msg.equals("disconnect.spam") ||
+                msg.startsWith("You are sending commands too fast!")
+            )) {
             return false;
         } else if (traps.contains(msg)) {
             disconnect();
@@ -166,12 +170,23 @@ void onWorldJoin(Entity en) {
 }
 
 void disconnect() {
-    client.sendPacketNoEvent(new C07(null, "", "UP"));
+    //client.sendPacketNoEvent(new C07(null, "", "UP"));
+    client.chat("/bedwars");
+
+    for (int i = 0; i < 100; i++) {
+        client.chat("/");
+    }
+
     client.chat("/bedwars");
     disconnecting = true;
     bedPosition = null;
     bedDistance = 0;
     client.print(prefix + "&7Disconnected.");
+
+    client.async(() -> {
+        client.sleep(3000);
+        disconnecting = false;
+    });
 }
 
 boolean areWithinBoundingBox(Vec3 vec1, Vec3 vec2, double x) {
