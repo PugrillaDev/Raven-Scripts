@@ -657,13 +657,32 @@ void ScaffoldA(Map<String, Object> anticheatPlayer, int cooldown, int vlThreshol
     boolean holdingBlocks = lastSwingItem == null ? false : lastSwingItem.type.startsWith("Block");
     boolean lookingDown = pitch >= 70f;
 
-    if (lookingDown && onGround && holdingBlocks && lastSwing == ticksExisted && lastStopCrouch >= ticksExisted - 1 && lastStopCrouch - lastStartCrouch <= 2) {
-        vl++;
-        if (vl >= vlThreshold && client.time() - lastAlert > cooldown) {
-            anticheatPlayer.put("ScaffoldA_LastAlert", client.time());
-            printFlag(anticheatPlayer, "ScaffoldA", vl);
-            if (alerts) {
-                client.ping();
+    if (lookingDown && holdingBlocks && lastSwing == ticksExisted && lastStopCrouch >= ticksExisted - 1 && lastStopCrouch - lastStartCrouch <= 2) {
+
+        boolean grounded = onGround;
+        List<String> scoreboard = world.getScoreboard();
+        if (!grounded && scoreboard != null && !scoreboard.isEmpty()) { // Fixes not flagging players in replays
+            String header = util.strip(scoreboard.get(0));
+            if ("ATLAS".equals(header) || "REPLAY".equals(header)) {
+                @SuppressWarnings("unchecked")
+                List<Vec3> ps = (List<Vec3>) anticheatPlayer.get("previousPositions");
+                if (ps != null && ps.size() > 1) {
+                    int sz = ps.size(), n = Math.min(sz - 1, 10);
+                    double sum = 0;
+                    for (int i = sz - n; i < sz; i++) sum += Math.abs(ps.get(i).y - ps.get(i - 1).y);
+                    grounded = (sum / n) <= 0.2;
+                }
+            }
+        }
+
+        if (grounded) {
+            vl++;
+            if (vl >= vlThreshold && client.time() - lastAlert > cooldown) {
+                anticheatPlayer.put("ScaffoldA_LastAlert", client.time());
+                printFlag(anticheatPlayer, "ScaffoldA", vl);
+                if (alerts) {
+                    client.ping();
+                }
             }
         }
     } else if (!lookingDown || !holdingBlocks || ticksExisted - lastStopCrouch > 20 || ticksExisted - lastSwing > 20 || (onGround && lastSwing == ticksExisted && lastStopCrouch < ticksExisted - 1)) {
