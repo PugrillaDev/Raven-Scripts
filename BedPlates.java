@@ -10,6 +10,7 @@ Map<String, ItemStack> stacks = new HashMap<>();
 HashSet<Integer> yLevels = new HashSet<>();
 boolean lastPressed;
 boolean display = true;
+boolean showCounters;
 int mode;
 HashSet<String> invalid = new HashSet<>(Arrays.asList(
     "leaves", "water", "lava", 
@@ -59,6 +60,7 @@ boolean alignTop;
 void onLoad() {
     modules.registerButton("Align Top Center", false);
     modules.registerButton("Auto Scale", true);
+    modules.registerButton("Show Block Count", true);
     modules.registerSlider("Scale", "", 0.8, 0.1, 1.5, 0.1);
     modules.registerSlider("Render Distance", " blocks", 150, 10, 200, 1);
     modules.registerSlider("Y Offset", " blocks", 1, -10, 10, 0.5);
@@ -86,6 +88,7 @@ void onPreUpdate() {
     autoScale = modules.getButton(scriptName, "Auto Scale");
     alignTop = modules.getButton(scriptName, "Align Top Center");
     mode = (int) modules.getSlider(scriptName, "Mode");
+    showCounters = modules.getButton(scriptName, "Show Block Count");
 
     Entity player = client.getPlayer();
     int ticks = player.getTicksExisted();
@@ -108,6 +111,7 @@ void onPreUpdate() {
 @SuppressWarnings("unchecked")
 void onRenderWorld(float partialTicks) {
     if (bedPositions.isEmpty()) return;
+    float fontHeight = render.getFontHeight();
 
     if (mode != 0) {
         boolean noGui = client.getScreen().isEmpty();
@@ -120,35 +124,31 @@ void onRenderWorld(float partialTicks) {
         } else {
             display = noGui && keybindPressed;
         }
-
         lastPressed = keybindPressed;
-
         if (!display) return;
     }
 
     List<Map<String, Object>> sortedBedPositions = new ArrayList<>(bedPositions.values());
-    Collections.sort(sortedBedPositions, Comparator.comparingDouble(bedData -> (double) bedData.get("distance")));
+    Collections.sort(sortedBedPositions, Comparator.comparingDouble(b -> (double)b.get("distance")));
     Collections.reverse(sortedBedPositions);
 
     int size = client.getDisplaySize()[2];
-
     gl.alpha(false);
+
     for (Map<String, Object> bedData : sortedBedPositions) {
         double distance = (double) bedData.get("distance");
         double lastDistance = (double) bedData.getOrDefault("lastdistance", distance);
-        
         double interpolatedDistance = lastDistance + (distance - lastDistance) * partialTicks;
         if (interpolatedDistance > maxDistance) continue;
 
-        boolean visible = (boolean) bedData.get("visible");
-        if (!visible) continue;
+        if (!(boolean)bedData.get("visible")) continue;
 
-        List<String> layers = (List<String>) bedData.getOrDefault("layers", new ArrayList<>());
-        if (layers.isEmpty()) continue;
-        
+        Map<String, Integer> layerCounts = (Map<String, Integer>)bedData.getOrDefault("layers", Collections.emptyMap());
+        if (layerCounts.isEmpty()) continue;
+        List<String> layers = new ArrayList<>(layerCounts.keySet());
+
         Vec3 position1 = (Vec3) bedData.get("position1");
         Vec3 position2 = (Vec3) bedData.get("position2");
-
         Vec3 bedPos = position1.offset(
             (position2.x - position1.x) / 2 + 0.5,
             verticalOffset,
@@ -158,55 +158,63 @@ void onRenderWorld(float partialTicks) {
         Vec3 screenPos = render.worldToScreen(bedPos.x, bedPos.y, bedPos.z, size, partialTicks);
         if (screenPos.z < 0 || screenPos.z >= 1.0003684d) continue;
 
-        float currentScale = scale;
-        if (autoScale) {
-            currentScale = (float) Math.max(0, scale * (1 - interpolatedDistance / maxDistance));
-        }
-
+        float currentScale = autoScale
+            ? (float)Math.max(0, scale * (1 - interpolatedDistance / maxDistance))
+            : scale;
         float itemSize = 16 * currentScale;
-        float itemPadding = currentScale * 2;
+        float itemPadding = 2 * currentScale;
         float boxSize = itemSize + itemPadding;
         float rectWidth = layers.size() * boxSize;
         float rectHeight = boxSize;
 
-        float startX = (float) screenPos.x - rectWidth / 2f;
-        float startY;
-        if (alignTop) {
-            startY = (float) screenPos.y;
-        } else {
-            startY = (float) screenPos.y - rectHeight;
-        }
-
-        float borderThickness = currentScale * 3;
+        float startX = (float)screenPos.x - rectWidth / 2f;
+        float startY = alignTop
+            ? (float)screenPos.y
+            : (float)screenPos.y - rectHeight;
+        float borderThickness = 3 * currentScale;
 
         render.roundedRect(
-            startX - borderThickness, 
-            startY - borderThickness, 
-            startX + rectWidth + borderThickness, 
-            startY + rectHeight + borderThickness, 
-            borderThickness, 
+            startX - borderThickness,
+            startY - borderThickness,
+            startX + rectWidth + borderThickness,
+            startY + rectHeight + borderThickness,
+            borderThickness,
             backgroundColor
         );
 
         for (int i = 0; i < layers.size(); i++) {
             String layer = layers.get(i);
-            ItemStack itemToRender = getStackFromName(layer);
+            ItemStack stack = getStackFromName(layer);
 
             float itemX = startX + i * boxSize;
             float itemY = startY;
 
             render.roundedRect(
-                itemX + itemPadding / 4f, 
-                itemY + itemPadding / 4f, 
-                itemX + boxSize - itemPadding / 4f,
-                itemY + boxSize - itemPadding / 4f,
-                currentScale * 2,
+                itemX + itemPadding/4f,
+                itemY + itemPadding/4f,
+                itemX + boxSize - itemPadding/4f,
+                itemY + boxSize - itemPadding/4f,
+                2f * currentScale,
                 borderColor
             );
+            render.item(stack, itemX + itemPadding/2f, itemY + itemPadding/2f, currentScale);
 
-            render.item(itemToRender, itemX + itemPadding / 2f, itemY + itemPadding / 2f, currentScale);
+            if (showCounters) {
+                int count = layerCounts.getOrDefault(layer, 0);
+                if (count > 1) {
+                    String txt = String.valueOf(count);
+                    float textScale = currentScale * 0.6f;
+                    float textWidth = render.getFontWidth(txt) + textScale;
+                    float textX = itemX + boxSize - itemPadding/2f - (textWidth * textScale);
+                    float textY = itemY + boxSize - itemPadding/2f - (fontHeight * textScale);
+                    gl.depth(false);
+                    render.text2d(txt, textX, textY, textScale, 0xFFFFFF, true);
+                    gl.depth(true);
+                }
+            }
         }
     }
+
     gl.alpha(true);
 }
 
@@ -245,7 +253,7 @@ void updateBeds() {
                 long lastCheck = (long) bedData.getOrDefault("lastcheck", 0L);
 
                 if (client.time() > lastCheck + delay) {
-                    List<String> layers = getBedDefenseLayers(bedPos1, bedPos2);
+                    Map<String, Integer> layers = getBedDefenseLayers(bedPos1, bedPos2);
                     bedData.put("layers", layers);
                     bedData.put("lastcheck", client.time());
                 }
@@ -313,7 +321,7 @@ void searchForBeds() {
                 bedData.put("position1", position1);
                 bedData.put("position2", position2 == null ? position1 : position2);
 
-                List<String> layers = getBedDefenseLayers(position1, position2);
+                Map<String, Integer> layers = getBedDefenseLayers(position1, position2);
                 bedData.put("layers", layers);
                 bedData.put("lastcheck", client.time());
 
@@ -355,38 +363,33 @@ void findYLevels() {
     });
 }
 
-List<String> getBedDefenseLayers(Vec3 position1, Vec3 position2) {
+Map<String, Integer> getBedDefenseLayers(Vec3 position1, Vec3 position2) {
     boolean facingZ = Math.abs(position2.z - position1.z) > Math.abs(position2.x - position1.x);
-
-    List<String> finalLayers = new ArrayList<>();
     Vec3[] beds = { position1, position2 };
-    HashSet<String> addedBlocks = new HashSet<>();
+
+    Map<String, Integer> cumulativeCounts = new HashMap<>();
+    int totalCumulativeBlocks = 0;
 
     int maxLayers = 5;
     int airLayersCount = 0;
 
     for (int layer = 1; layer <= maxLayers; layer++) {
-        Map<String, Integer> blockCounts = new HashMap<>();
-        Vec3 startPos;
-
-        int totalBlocks = 0;
-        int airBlocks = 0;
+        Map<String, Integer> layerCounts = new HashMap<>();
+        int layerTotalBlocks = 0;
+        int layerAirBlocks = 0;
 
         for (int bedPart = 0; bedPart < beds.length; bedPart++) {
             Vec3 bed = beds[bedPart];
-            int offset = bedPart == 0 ? layer : -layer;
+            int offset = (bedPart == 0 ? layer : -layer);
 
-            if (facingZ) {
-                startPos = new Vec3(bed.x, bed.y, bed.z + offset);
-            } else {
-                startPos = new Vec3(bed.x + offset, bed.y, bed.z);
-            }
+            Vec3 startPos = facingZ
+                ? new Vec3(bed.x, bed.y, bed.z + offset)
+                : new Vec3(bed.x + offset, bed.y, bed.z);
 
             for (int step1 = 0; step1 <= layer; step1++) {
                 int yOffset = 0;
                 for (int step2 = step1; step2 >= 0; step2--) {
                     Vec3 pos1, pos2;
-
                     if (facingZ) {
                         pos1 = new Vec3(startPos.x - step2, startPos.y + yOffset, startPos.z - (bedPart == 0 ? step1 : -step1));
                         pos2 = new Vec3(startPos.x + step2, startPos.y + yOffset, startPos.z - (bedPart == 0 ? step1 : -step1));
@@ -395,47 +398,43 @@ List<String> getBedDefenseLayers(Vec3 position1, Vec3 position2) {
                         pos2 = new Vec3(startPos.x - (bedPart == 0 ? step1 : -step1), startPos.y + yOffset, startPos.z + step2);
                     }
 
-                    String blockType1 = addBlockToCount(pos1, blockCounts);
-                    if (blockType1.equals("air")) {
-                        airBlocks++;
-                    }
-                    totalBlocks++;
+                    String type1 = addBlockToCount(pos1, layerCounts);
+                    if ("air".equals(type1)) layerAirBlocks++;
+                    layerTotalBlocks++;
 
                     if (!pos1.equals(pos2)) {
-                        String blockType2 = addBlockToCount(pos2, blockCounts);
-                        if (blockType2.equals("air")) {
-                            airBlocks++;
-                        }
-                        totalBlocks++;
+                        String type2 = addBlockToCount(pos2, layerCounts);
+                        if ("air".equals(type2)) layerAirBlocks++;
+                        layerTotalBlocks++;
                     }
 
-                    if (step2 > 0) {
-                        yOffset++;
-                    }
+                    if (step2 > 0) yOffset++;
                 }
             }
         }
 
-        if (totalBlocks == 0 || ((float) airBlocks / totalBlocks) > 0.2) {
+        if (layerTotalBlocks == 0 || ((float) layerAirBlocks / layerTotalBlocks) > 0.2f) {
             airLayersCount++;
-            if (airLayersCount >= 2) {
-                break;
-            }
+            if (airLayersCount >= 2) break;
             continue;
         }
 
-        for (Map.Entry<String, Integer> entry : blockCounts.entrySet()) {
-            String blockType = entry.getKey();
-            int count = entry.getValue();
-            float blockFraction = (float) count / totalBlocks;
-
-            if (blockFraction >= 0.2 && !blockType.equals("air") && addedBlocks.add(blockType)) {
-                finalLayers.add(blockType);
-            }
+        for (Map.Entry<String, Integer> e : layerCounts.entrySet()) {
+            cumulativeCounts.merge(e.getKey(), e.getValue(), Integer::sum);
+            totalCumulativeBlocks += e.getValue();
         }
     }
 
-    return finalLayers;
+    Map<String, Integer> finalCounts = new HashMap<>();
+    for (Map.Entry<String, Integer> e : cumulativeCounts.entrySet()) {
+        String blockType = e.getKey();
+        int count = e.getValue();
+        if (!"air".equals(blockType) && ((float) count / totalCumulativeBlocks) >= 0.2f) {
+            finalCounts.put(blockType, count);
+        }
+    }
+
+    return finalCounts;
 }
 
 String addBlockToCount(Vec3 pos, Map<String, Integer> blockCounts) {
