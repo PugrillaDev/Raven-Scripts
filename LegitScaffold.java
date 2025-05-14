@@ -74,6 +74,7 @@ void onPrePlayerInput(MovementInput m) {
 
     boolean shouldSneak = edgeOffset > modules.getSlider(scriptName, "Edge offset");
     boolean shouldRelease = sneakingFromScript && (!manualSneak || ((placed || sneakJumpStartTick != -1) && requireSneak));
+    
     if (shouldSneak) {
         pressSneak(m, true);
     } else if (shouldRelease) {
