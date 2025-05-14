@@ -1,6 +1,10 @@
 Set<String> parsed = new HashSet<>();
 Map<String, Integer> noColorTicks = new HashMap<>();
 
+void onLoad() {
+    modules.registerButton("Show failed denicks", true);
+}
+
 void onPreUpdate() {
     for (NetworkPlayer nwp : world.getNetworkPlayers()) {
         String uuid = nwp.getUUID();
@@ -41,7 +45,7 @@ void parseSkinData(NetworkPlayer nwp, String rawJson) {
 
     String displayName = cleanName(nwp.getDisplayName());
 
-    if (nicks.contains(hash)) {
+    if (nicks.contains(hash) && modules.getButton(scriptName, "Show failed denicks")) {
         client.print("&8[&cDenicker&8] &r" + displayName + " &7is nicked.");
         return;
     }
