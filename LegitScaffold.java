@@ -40,7 +40,7 @@ void onPrePlayerInput(MovementInput m) {
 
     Entity player = client.getPlayer();
 
-    if (modules.getButton(scriptName, "Not moving forward") && keybinds.isKeyDown(keybinds.getKeyCode("forward")) ||
+    if (modules.getButton(scriptName, "Not moving forward") && client.getForward() > 0 ||
         modules.getButton(scriptName, "Looking down") && player.getPitch() < 70 ||
         modules.getButton(scriptName, "Holding blocks") && !player.isHoldingBlock()) {
         if (!manualSneak && sneakingFromScript) releaseSneak(m, true);
