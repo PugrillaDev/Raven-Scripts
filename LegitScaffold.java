@@ -11,18 +11,10 @@ void onLoad() {
     modules.registerSlider("Edge offset", " blocks", 0, 0, 0.3, 0.01);
     modules.registerSlider("Unsneak delay", "ms", 50, 50, 300, 5);
     modules.registerSlider("Sneak on jump", "ms", 0, 0, 500, 5);
-    modules.registerButton("Sneak key pressed", false);
+    //modules.registerButton("Sneak key pressed", false);
     modules.registerButton("Holding blocks", false);
     modules.registerButton("Looking down", false);
     modules.registerButton("Not moving forward", false);
-}
-
-void onDisable() {
-    boolean manualSneak = isManualSneak();
-    if ((!manualSneak && sneakingFromScript) || ( manualSneak && !sneakingFromScript && modules.getButton(scriptName, "Sneak key pressed"))) {
-        MovementInput m = new MovementInput(client.getForward(), client.getStrafe(), client.isJump(), client.isSneak());
-        releaseSneak(m, true);
-    }
 }
 
 void onPrePlayerInput(MovementInput m) {
@@ -30,20 +22,18 @@ void onPrePlayerInput(MovementInput m) {
     boolean requireSneak = modules.getButton(scriptName, "Sneak key pressed");
 
     if (!manualSneak && requireSneak) {
-        if (sneakingFromScript) releaseSneak(m, true);
         return;
     }
 
     if (manualSneak && !requireSneak) {
         unsneakStartTick = -1;
+        return;
     }
 
     Entity player = client.getPlayer();
-
     if (modules.getButton(scriptName, "Not moving forward") && client.getForward() > 0 ||
         modules.getButton(scriptName, "Looking down") && player.getPitch() < 70 ||
         modules.getButton(scriptName, "Holding blocks") && !player.isHoldingBlock()) {
-        if (!manualSneak && sneakingFromScript) releaseSneak(m, true);
         return;
     }
 
@@ -68,7 +58,7 @@ void onPrePlayerInput(MovementInput m) {
 
     double edgeOffset = computeEdgeOffset(simPosition, position);
     if (Double.isNaN(edgeOffset)) {
-        if (sneakingFromScript && !manualSneak) tryReleaseSneak(m, true);
+        if (sneakingFromScript) tryReleaseSneak(m, true);
         return;
     }
 
@@ -117,8 +107,6 @@ void tryReleaseSneak(MovementInput m, boolean resetDelay) {
         pressSneak(m, false);
         return;
     }
-
-    releaseSneak(m, resetDelay);
 }
 
 void releaseSneak(MovementInput m, boolean resetDelay) {
