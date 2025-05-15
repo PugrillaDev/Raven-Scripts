@@ -19,13 +19,9 @@ void onLoad() {
 
 void onPrePlayerInput(MovementInput m) {
     boolean manualSneak = isManualSneak();
-    boolean requireSneak = modules.getButton(scriptName, "Sneak key pressed");
+    //boolean requireSneak = modules.getButton(scriptName, "Sneak key pressed");
 
-    if (!manualSneak && requireSneak) {
-        return;
-    }
-
-    if (manualSneak && !requireSneak) {
+    if (manualSneak) {
         unsneakStartTick = -1;
         return;
     }
@@ -63,7 +59,7 @@ void onPrePlayerInput(MovementInput m) {
     }
 
     boolean shouldSneak = edgeOffset > modules.getSlider(scriptName, "Edge offset");
-    boolean shouldRelease = sneakingFromScript && (!manualSneak || ((placed || sneakJumpStartTick != -1) && requireSneak));
+    boolean shouldRelease = sneakingFromScript;
     
     if (shouldSneak) {
         pressSneak(m, true);
