@@ -103,6 +103,8 @@ void tryReleaseSneak(MovementInput m, boolean resetDelay) {
         pressSneak(m, false);
         return;
     }
+
+    releaseSneak(m, resetDelay);
 }
 
 void releaseSneak(MovementInput m, boolean resetDelay) {
