@@ -380,9 +380,7 @@ Map<String, Integer> getBedDefenseLayers(Vec3 position1, Vec3 position2) {
             Vec3 bed = beds[bedPart];
             int offset = (bedPart == 0 ? layer : -layer);
 
-            Vec3 startPos = facingZ
-                ? new Vec3(bed.x, bed.y, bed.z + offset)
-                : new Vec3(bed.x + offset, bed.y, bed.z);
+            Vec3 startPos = facingZ ? new Vec3(bed.x, bed.y, bed.z + offset) : new Vec3(bed.x + offset, bed.y, bed.z);
 
             for (int step1 = 0; step1 <= layer; step1++) {
                 int yOffset = 0;
@@ -411,7 +409,7 @@ Map<String, Integer> getBedDefenseLayers(Vec3 position1, Vec3 position2) {
             }
         }
 
-        if (layerTotalBlocks == 0 || ((float) layerAirBlocks / layerTotalBlocks) > 0.20f) {
+        if (layerTotalBlocks == 0 || ((float) layerAirBlocks / layerTotalBlocks) > 0.2f) {
             if (++airLayersCount >= 2) break;
             continue;
         }
@@ -419,7 +417,7 @@ Map<String, Integer> getBedDefenseLayers(Vec3 position1, Vec3 position2) {
         for (Map.Entry<String, Integer> e : layerCounts.entrySet()) {
             String blockType = e.getKey();
             int count = e.getValue();
-            if (!"air".equals(blockType) && ((float) count / layerTotalBlocks) >= 0.20f) {
+            if (!"air".equals(blockType) && ((float) count / layerTotalBlocks) >= 0.2f) {
                 finalCounts.merge(blockType, count, Integer::sum);
             }
         }
