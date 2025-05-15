@@ -367,16 +367,14 @@ Map<String, Integer> getBedDefenseLayers(Vec3 position1, Vec3 position2) {
     boolean facingZ = Math.abs(position2.z - position1.z) > Math.abs(position2.x - position1.x);
     Vec3[] beds = { position1, position2 };
 
-    Map<String, Integer> cumulativeCounts = new HashMap<>();
-    int totalCumulativeBlocks = 0;
-
+    Map<String, Integer> finalCounts = new HashMap<>();
     int maxLayers = 5;
     int airLayersCount = 0;
 
     for (int layer = 1; layer <= maxLayers; layer++) {
         Map<String, Integer> layerCounts = new HashMap<>();
         int layerTotalBlocks = 0;
-        int layerAirBlocks = 0;
+        int layerAirBlocks  = 0;
 
         for (int bedPart = 0; bedPart < beds.length; bedPart++) {
             Vec3 bed = beds[bedPart];
@@ -413,24 +411,17 @@ Map<String, Integer> getBedDefenseLayers(Vec3 position1, Vec3 position2) {
             }
         }
 
-        if (layerTotalBlocks == 0 || ((float) layerAirBlocks / layerTotalBlocks) > 0.2f) {
-            airLayersCount++;
-            if (airLayersCount >= 2) break;
+        if (layerTotalBlocks == 0 || ((float) layerAirBlocks / layerTotalBlocks) > 0.20f) {
+            if (++airLayersCount >= 2) break;
             continue;
         }
 
         for (Map.Entry<String, Integer> e : layerCounts.entrySet()) {
-            cumulativeCounts.merge(e.getKey(), e.getValue(), Integer::sum);
-            totalCumulativeBlocks += e.getValue();
-        }
-    }
-
-    Map<String, Integer> finalCounts = new HashMap<>();
-    for (Map.Entry<String, Integer> e : cumulativeCounts.entrySet()) {
-        String blockType = e.getKey();
-        int count = e.getValue();
-        if (!"air".equals(blockType) && ((float) count / totalCumulativeBlocks) >= 0.2f) {
-            finalCounts.put(blockType, count);
+            String blockType = e.getKey();
+            int count = e.getValue();
+            if (!"air".equals(blockType) && ((float) count / layerTotalBlocks) >= 0.20f) {
+                finalCounts.merge(blockType, count, Integer::sum);
+            }
         }
     }
 
