@@ -12,6 +12,8 @@ boolean startup;
 boolean wait;
 int INTERVAL = 20;
 int counter = 0;
+int resetCount;
+boolean waitForLobbySelector;
 String currentNick = "";
 List<String> containsList = new ArrayList<>();
 List<String> startsWithList = new ArrayList<>();
@@ -35,6 +37,7 @@ HashSet<Character> allowedRepeating = new HashSet<>(Arrays.asList(
 
 void onLoad() {
     modules.registerSlider("Nick Interval", "", 15, 1, 50, 1);
+    modules.registerSlider("Reset Interval", "", 0, 0, 50, 1);
     modules.registerButton("Vowel Repeaters", true);
     modules.registerButton("4 Letters", true);
     modules.registerButton("N Word", true);
@@ -60,9 +63,36 @@ void onPreUpdate() {
         return;
     }
 
+    if (waitForLobbySelector) {
+        if (client.getScreen().equals("GuiChest") && inventory.getChest().endsWith("Lobby Selector")) {
+            Map<Integer, ItemStack> inv = createCustomInventory();
+            for (int i = inv.size() - 1; i >= 0; i--) {
+                ItemStack stack = inv.get(i);
+                if (stack != null) {
+                    String name = stack.displayName;
+                    if (name.startsWith(util.colorSymbol + "a") && util.strip(name).contains("Lobby #")) {
+                        inventory.click(i, 0, 0);
+                        waitForLobbySelector = false;
+                        break;
+                    }
+                }
+            }
+        }
+        return;
+    }
+
     if (client.time() - lastSentNick > INTERVAL * 50) {
         INTERVAL = (int) modules.getSlider(scriptName, "Nick Interval");
         lastSentNick = client.time();
+
+        int resetInterval = (int)modules.getSlider(scriptName, "Reset Interval");
+        if (resetInterval > 0 && ++resetCount > resetInterval) {
+            if (inventory.getSlot() != 8) inventory.setSlot(8);
+            keybinds.rightClick();
+            waitForLobbySelector = true;
+            resetCount = 0;
+            return;
+        }
     
         client.chat("/nick help setrandom");
     }
@@ -229,7 +259,7 @@ boolean onPacketSent(CPacket packet) {
                 client.print(chatPrefix + "&eNickbot has been " + (enabled ? "&aenabled" : "&cdisabled") + "&e.");
             } else {
                 wait = true;
-                counter = 0;
+                counter = resetCount = 0;
                 client.chat("/nick reuse");
                 client.print(chatPrefix + "&eFetching current nick...");
             }
@@ -353,4 +383,27 @@ String generatePadding(char character, int pixelWidth) {
         builder.append(character);
     }
     return builder.toString();
+}
+
+Map<Integer, ItemStack> createCustomInventory() {
+    Map<Integer, ItemStack> inv = new HashMap<>();
+    String screen = client.getScreen();
+    int inventorySize = inventory.getSize() - 4, slot = 0;
+
+    if (screen.equals("GuiInventory")) {
+        for (int i = 0; i < 5; i++) inv.put(slot++, null);
+        Entity player = client.getPlayer();
+        for (int i = 3; i >= 0; i--) inv.put(slot++, player.getArmorInSlot(i));
+    } else if (screen.equals("GuiChest") && !inventory.getChest().isEmpty()) {
+        int chestSize = inventory.getChestSize();
+        for (int i = 0; i < chestSize; i++) {
+            inv.put(slot++, inventory.getStackInChestSlot(i));
+        }
+    }
+
+    for (int i = 9; i < inventorySize + 9; i++) {
+        inv.put(slot++, inventory.getStackInSlot(i % inventorySize));
+    }
+
+    return inv;
 }
