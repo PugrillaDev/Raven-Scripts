@@ -120,21 +120,19 @@ boolean isGood(String nick) {
     if (modules.getButton(scriptName, "N Word") && lower.contains("nickherr")) return true;
 
     if (modules.getButton(scriptName, "Vowel Repeaters") && Character.isUpperCase(nick.charAt(0))) {
-        char lastChar = ' ';
-        int repeating = 1;
-        for (int i = 0; i < nick.length(); i++) {
-            char currentChar = nick.charAt(i);
-            if (allowedRepeating.contains(currentChar) && currentChar == lastChar) {
-                repeating++;
-            } else {
-                lastChar = currentChar;
-                repeating = 1;
-            }
+        for (int j = 1; j < nick.length(); j++) if (Character.isUpperCase(nick.charAt(j))) return false;
 
-            if (repeating >= 3) {
-                if (nick.length() > 9 && lower.contains("free")) return false;
-                if (nick.length() >= 11) return false;
-                return true;
+        char last = 0;
+        int count = 1;
+        for (int i = 0; i < nick.length(); i++) {
+            char c = nick.charAt(i);
+            if ("aeiouyAEIOUY".indexOf(c) >= 0 && c == last) {
+                if (++count >= 3) {
+                    return true;
+                }
+            } else {
+                last = c;
+                count = 1;
             }
         }
     }
