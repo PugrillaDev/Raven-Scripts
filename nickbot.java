@@ -118,36 +118,35 @@ boolean isGood(String nick) {
     if (currentNick.toLowerCase().equals(lower)) return false;
     if (modules.getButton(scriptName, "4 Letters") && nick.length() == 4) return true;
     if (modules.getButton(scriptName, "N Word") && lower.contains("nickherr")) return true;
-    
-    char lastChar = ' ';
-    int repeating = 1;
-    if (modules.getButton(scriptName, "Vowel Repeaters")) { for (int i = 0; i < nick.length(); i++) {
-        char currentChar = nick.charAt(i);
-        if (allowedRepeating.contains(currentChar) && currentChar == lastChar) {
-            repeating++;
-        } else {
-            lastChar = currentChar;
-            repeating = 1;
-        }
 
-        if (repeating >= 3) {
-            if (nick.length() > 9 && lower.contains("free")) return false;
-            if (nick.length() >= 11) return false;
-            return true;
-        }
-    }}
+    if (modules.getButton(scriptName, "Vowel Repeaters") && Character.isUpperCase(nick.charAt(0))) {
+        char lastChar = ' ';
+        int repeating = 1;
+        for (int i = 0; i < nick.length(); i++) {
+            char currentChar = nick.charAt(i);
+            if (allowedRepeating.contains(currentChar) && currentChar == lastChar) {
+                repeating++;
+            } else {
+                lastChar = currentChar;
+                repeating = 1;
+            }
 
-    for (String pattern : startsWithList) {
+            if (repeating >= 3) {
+                if (nick.length() > 9 && lower.contains("free")) return false;
+                if (nick.length() >= 11) return false;
+                return true;
+            }
+        }
+    }
+
+    for (String pattern : startsWithList)
         if (lower.startsWith(pattern)) return true;
-    }
 
-    for (String pattern : endsWithList) {
+    for (String pattern : endsWithList)
         if (lower.endsWith(pattern)) return true;
-    }
 
-    for (String pattern : containsList) {
+    for (String pattern : containsList)
         if (lower.contains(pattern)) return true;
-    }
 
     return false;
 }
