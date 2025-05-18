@@ -1,3 +1,5 @@
+/* This is a shitpost i made 2 years ago so don't complain that the code is bad */
+
 int status = -1;
 int step = 0;
 int tpAimingTicks = 0;
