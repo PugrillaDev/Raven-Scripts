@@ -624,9 +624,15 @@ void RotationA(Map<String, Object> anticheatPlayer, int cooldown, int vlThreshol
     int vl = (int) anticheatPlayer.getOrDefault("RotationA_VL", 0);
     long lastAlert = (long) anticheatPlayer.getOrDefault("RotationA_LastAlert", 0L);
 
-    float pitch = (float) anticheatPlayer.get("pitch"); // False flags in replays due to inaccurate pitch!
+    float pitch = (float) anticheatPlayer.get("pitch");
 
     if (Math.abs(pitch) > 90) {
+        List<String> scoreboard = world.getScoreboard();
+        if (scoreboard != null) {
+            String header = util.strip(scoreboard.get(0));
+            if ("ATLAS".equals(header) || "REPLAY".equals(header)) return;
+        }
+
         vl++;
         if (vl >= vlThreshold && client.time() - lastAlert > cooldown) {
             anticheatPlayer.put("RotationA_LastAlert", client.time());
