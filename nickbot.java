@@ -7,6 +7,7 @@ static final String NICK_CLAIM_COMMAND = "/nick actuallyset ";
 final String chatPrefix = "&7[&dN&7]&r ";
 long lastSentLimbo = client.time();
 long lastSentNick = client.time();
+long lastLobbySelect = client.time();
 boolean enabled;
 boolean startup;
 boolean wait;
@@ -64,21 +65,25 @@ void onPreUpdate() {
     }
 
     if (waitForLobbySelector) {
-        if (client.getScreen().equals("GuiChest") && inventory.getChest().endsWith("Lobby Selector")) {
-            Map<Integer, ItemStack> inv = createCustomInventory();
-            for (int i = inv.size() - 1; i >= 0; i--) {
-                ItemStack stack = inv.get(i);
-                if (stack != null) {
-                    String name = stack.displayName;
-                    if (name.startsWith(util.colorSymbol + "a") && util.strip(name).contains("Lobby #")) {
-                        inventory.click(i, 0, 0);
-                        waitForLobbySelector = false;
-                        break;
+        if (client.time() - lastLobbySelect > 5000) {
+            waitForLobbySelector = false;
+        } else {
+            if (client.getScreen().equals("GuiChest") && inventory.getChest().endsWith("Lobby Selector")) {
+                Map<Integer, ItemStack> inv = createCustomInventory();
+                for (int i = inv.size() - 1; i >= 0; i--) {
+                    ItemStack stack = inv.get(i);
+                    if (stack != null) {
+                        String name = stack.displayName;
+                        if (name.startsWith(util.colorSymbol + "a") && util.strip(name).contains("Lobby #")) {
+                            inventory.click(i, 0, 0);
+                            waitForLobbySelector = false;
+                            break;
+                        }
                     }
                 }
             }
+            return;
         }
-        return;
     }
 
     if (client.time() - lastSentNick > INTERVAL * 50) {
@@ -89,6 +94,7 @@ void onPreUpdate() {
         if (resetInterval > 0 && ++resetCount > resetInterval) {
             if (inventory.getSlot() != 8) inventory.setSlot(8);
             keybinds.rightClick();
+            lastLobbySelect = client.time();
             waitForLobbySelector = true;
             resetCount = 0;
             return;
@@ -260,6 +266,7 @@ boolean onPacketSent(CPacket packet) {
             } else {
                 wait = true;
                 counter = resetCount = 0;
+                waitForLobbySelector = false;
                 client.chat("/nick reuse");
                 client.print(chatPrefix + "&eFetching current nick...");
             }
