@@ -2,6 +2,7 @@ double HW = 0.3;
 double[][] CORNERS = {{ -HW, -HW }, { HW, -HW }, { -HW, HW }, { HW, HW }};
 boolean sneakingFromScript;
 boolean placed;
+boolean forceRelease;
 int sneakJumpDelayTicks;
 int sneakJumpStartTick = -1;
 int unsneakDelayTicks;
@@ -11,7 +12,7 @@ void onLoad() {
     modules.registerSlider("Edge offset", " blocks", 0, 0, 0.3, 0.01);
     modules.registerSlider("Unsneak delay", "ms", 50, 50, 300, 5);
     modules.registerSlider("Sneak on jump", "ms", 0, 0, 500, 5);
-    //modules.registerButton("Sneak key pressed", false);
+    modules.registerButton("Sneak key pressed", false);
     modules.registerButton("Holding blocks", false);
     modules.registerButton("Looking down", false);
     modules.registerButton("Not moving forward", false);
@@ -19,10 +20,16 @@ void onLoad() {
 
 void onPrePlayerInput(MovementInput m) {
     boolean manualSneak = isManualSneak();
-    //boolean requireSneak = modules.getButton(scriptName, "Sneak key pressed");
+    boolean requireSneak = modules.getButton(scriptName, "Sneak key pressed");
 
-    if (manualSneak) {
-        unsneakStartTick = -1;
+    if (manualSneak && !requireSneak) {
+        resetUnsneak();
+        return;
+    }
+
+    if (requireSneak && (!manualSneak || (m.forward == 0 && m.strafe == 0))) {
+        if (!manualSneak) resetUnsneak();
+        repressSneak(m);
         return;
     }
 
@@ -30,16 +37,21 @@ void onPrePlayerInput(MovementInput m) {
     if (modules.getButton(scriptName, "Not moving forward") && client.getForward() > 0 ||
         modules.getButton(scriptName, "Looking down") && player.getPitch() < 70 ||
         modules.getButton(scriptName, "Holding blocks") && !player.isHoldingBlock()) {
+        if (requireSneak) {
+            repressSneak(m);
+        }
         return;
     }
 
     if (m.jump && player.onGround() && (m.forward != 0 || m.strafe != 0) && modules.getSlider(scriptName, "Sneak on jump") > 0) {
-        sneakJumpStartTick = player.getTicksExisted();
-        double raw = modules.getSlider(scriptName, "Sneak on jump") / 50;
-        int base = (int) raw;
-        sneakJumpDelayTicks = base + (util.randomDouble(0, 1) < (raw - base) ? 1 : 0);
-        pressSneak(m, true);
-        return;
+        if (!requireSneak || forceRelease) {
+            sneakJumpStartTick = player.getTicksExisted();
+            double raw = modules.getSlider(scriptName, "Sneak on jump") / 50;
+            int base = (int) raw;
+            sneakJumpDelayTicks = base + (util.randomDouble(0, 1) < (raw - base) ? 1 : 0);
+            pressSneak(m, true);
+            return;
+        }
     }
 
     Vec3 position = player.getPosition();
@@ -78,11 +90,19 @@ boolean onPacketSent(CPacket packet) {
     return true;
 }
 
+void repressSneak(MovementInput m) {
+    if (forceRelease && isManualSneak()) {
+        keybinds.setPressed("sneak", true);
+        m.sneak = true;
+    }
+    forceRelease = false;
+}
+
 void pressSneak(MovementInput m, boolean resetDelay) {
     m.sneak = true;
     sneakingFromScript = true;
     if (resetDelay) {
-        unsneakStartTick = -1;
+        resetUnsneak();
     }
 }
 
@@ -108,11 +128,27 @@ void tryReleaseSneak(MovementInput m, boolean resetDelay) {
 }
 
 void releaseSneak(MovementInput m, boolean resetDelay) {
-    m.sneak = false;
+
+    if (!modules.getButton(scriptName, "Sneak key pressed")) {
+        m.sneak = false;
+    }
+    else if (sneakingFromScript && isManualSneak() && (placed || !client.getPlayer().onGround())) {
+        keybinds.setPressed("sneak", false);
+        m.sneak = false;
+        forceRelease = true;
+    }
+    else if (forceRelease) {
+        m.sneak = false;
+    }
+
     sneakingFromScript = placed = false;
     if (resetDelay) {
-        unsneakStartTick = sneakJumpStartTick = -1;
+        resetUnsneak();
     }
+}
+
+void resetUnsneak() {
+    unsneakStartTick = sneakJumpStartTick = -1;
 }
 
 boolean isManualSneak() {
