@@ -102,7 +102,7 @@ void pressSneak(MovementInput m, boolean resetDelay) {
     m.sneak = true;
     sneakingFromScript = true;
     if (resetDelay) {
-        resetUnsneak();
+        unsneakStartTick = -1;
     }
 }
 
