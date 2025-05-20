@@ -6,7 +6,7 @@
 static final String NICK_CLAIM_COMMAND = "/nick actuallyset ";
 final String chatPrefix = "&7[&dN&7]&r ";
 long lastSentLimbo = client.time();
-long lastSentNick = client.time();
+int lastSentNick;
 long lastLobbySelect = client.time();
 boolean enabled;
 boolean startup;
@@ -14,6 +14,7 @@ boolean wait;
 int INTERVAL = 20;
 int counter = 0;
 int resetCount;
+int existed;
 boolean waitForLobbySelector;
 String currentNick = "";
 List<String> containsList = new ArrayList<>();
@@ -54,6 +55,34 @@ void onEnable() {
 
 void onPreUpdate() {
     if (!enabled) return;
+    existed++;
+
+    if (client.getScreen().equals("GuiScreenBook")) {
+        List<String> pages = inventory.getBookContents();
+        if (pages != null) {
+            String nick = "";
+
+            for (int i = 0; i < pages.size(); i++) {
+                String page = pages.get(i);
+                if (!page.equals("you:")) continue;
+                nick = util.strip(pages.get(i + 1));
+                break;
+            }
+
+            if (!nick.isEmpty()) {
+                boolean isGood = isGood(nick);
+
+                if (isGood) {
+                    client.chat(NICK_CLAIM_COMMAND + nick);
+                    client.print(chatPrefix + "&eClaimed nick &3" + nick + "&e!");
+                    enabled = false;
+                } else {
+                    client.print(chatPrefix + "&eNew nick #" + (++counter) + ": &3" + nick + "&e.");
+                    client.closeScreen();
+                }
+            }
+        }
+    }
 
     int status = getLobbyStatus();
     if (status != 1) {
@@ -86,9 +115,9 @@ void onPreUpdate() {
         }
     }
 
-    if (client.time() - lastSentNick > INTERVAL * 50) {
+    if (existed - lastSentNick > INTERVAL) {
         INTERVAL = (int) modules.getSlider(scriptName, "Nick Interval");
-        lastSentNick = client.time();
+        lastSentNick = existed;
 
         int resetInterval = (int)modules.getSlider(scriptName, "Reset Interval");
         if (resetInterval > 0 && ++resetCount > resetInterval) {
@@ -101,33 +130,6 @@ void onPreUpdate() {
         }
     
         client.chat("/nick help setrandom");
-    }
-
-    if (client.getScreen().equals("GuiScreenBook")) {
-        List<String> pages = inventory.getBookContents();
-        if (pages != null) {
-            String nick = "";
-
-            for (int i = 0; i < pages.size(); i++) {
-                String page = pages.get(i);
-                if (!page.equals("you:")) continue;
-                nick = util.strip(pages.get(i + 1));
-                break;
-            }
-
-            if (nick.isEmpty()) return;
-
-            boolean isGood = isGood(nick);
-
-            if (isGood) {
-                client.chat(NICK_CLAIM_COMMAND + nick);
-                client.print(chatPrefix + "&eClaimed nick &3" + nick + "&e!");
-                enabled = false;
-            } else {
-                client.print(chatPrefix + "&eNew nick #" + (++counter) + ": &3" + nick + "&e.");
-                client.closeScreen();
-            }
-        }
     }
 }
 
@@ -265,7 +267,7 @@ boolean onPacketSent(CPacket packet) {
                 client.print(chatPrefix + "&eNickbot has been " + (enabled ? "&aenabled" : "&cdisabled") + "&e.");
             } else {
                 wait = true;
-                counter = resetCount = 0;
+                counter = resetCount = lastSentNick = 0;
                 waitForLobbySelector = false;
                 client.chat("/nick reuse");
                 client.print(chatPrefix + "&eFetching current nick...");
