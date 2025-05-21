@@ -104,6 +104,7 @@ void pressSneak(MovementInput m, boolean resetDelay) {
     if (resetDelay) {
         unsneakStartTick = -1;
     }
+    repressSneak(m);
 }
 
 void tryReleaseSneak(MovementInput m, boolean resetDelay) {
@@ -128,7 +129,6 @@ void tryReleaseSneak(MovementInput m, boolean resetDelay) {
 }
 
 void releaseSneak(MovementInput m, boolean resetDelay) {
-
     if (!modules.getButton(scriptName, "Sneak key pressed")) {
         m.sneak = false;
     }
