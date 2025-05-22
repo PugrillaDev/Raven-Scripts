@@ -26,7 +26,7 @@ void onPreUpdate() {
 }
 
 void onPostMotion() {
-    placing = false;
+    placing = keybinds.isMouseDown(1);
 }
 
 boolean onPacketSent(CPacket packet) {
