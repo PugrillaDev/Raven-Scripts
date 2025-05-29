@@ -1,24 +1,23 @@
 Set<String> blocks = new HashSet<>(Arrays.asList("wool", "planks", "log", "end_stone", "hardened_clay", "glass", "stained_hardened_clay", "stained_glass", "obsidian", "ladder", "sponge"));
-int lastSwapTick = -20;
 int lastSwapSlot = -1;
 int lastPlaceSlot = -1;
 ItemStack lastBlock;
 boolean placing;
+long lastSwap;
 
 void onPreUpdate() {
-    Entity player = client.getPlayer();
-    int tick = player.getTicksExisted();
-    int currSlot = inventory.getSlot();
-    ItemStack held = player.getHeldItem();
+    if (!placing || inventory.getSlot() != lastPlaceSlot || lastBlock == null || !blocks.contains(lastBlock.name) || client.getPlayer().getHeldItem() != null) return;
 
-    if (!placing || held != null || currSlot != lastPlaceSlot || lastBlock == null || !blocks.contains(lastBlock.name)) return;
+    long now = client.time();
 
     for (int slot = 8; slot >= 0; --slot) {
-        if (slot == lastSwapSlot && tick - lastSwapTick <= 5) continue;
+        if (slot == lastSwapSlot && now - lastSwap < 300) {
+            continue;
+        }
         ItemStack stack = inventory.getStackInSlot(slot);
         if (stack != null && stack.name.equals(lastBlock.name)) {
             inventory.setSlot(slot);
-            lastSwapTick = tick;
+            lastSwap = now;
             lastSwapSlot = slot;
             break;
         }
