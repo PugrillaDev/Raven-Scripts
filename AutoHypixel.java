@@ -42,7 +42,7 @@ void handleReward(String text) {
     if (start == -1) return;
     if (end == -1) end = text.length();
 
-    String rewardLink = text.substring(start, end).replace("https://www.hypixel.net/", "https://rewards.hypixel.net/").replace("https://hypixel.net/", "https://rewards.hypixel.net/");
+    String rewardLink = text.substring(start, end).replace("https://hypixel.net/", "https://rewards.hypixel.net/");
 
     int codeStart = rewardLink.lastIndexOf("/") + 1;
     String code = rewardLink.substring(codeStart);
