@@ -115,7 +115,6 @@ void handleReward(String text) {
 
             String claim = "https://rewards.hypixel.net/claim-reward/claim?id=" + appData.get("id").asString() + "&option=" + index + "&activeAd=" + appData.get("activeAd").asString() + "&_csrf=" + token;
 
-            client.print(new Message(claim));
             Request req2 = new Request("POST", claim);
             req2.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36");
             Response res2 = req2.fetch();
