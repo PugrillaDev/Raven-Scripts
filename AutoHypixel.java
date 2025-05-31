@@ -2,7 +2,7 @@ void onLoad() {
     modules.registerDescription("Lobby Messages");
     modules.registerButton("Disable lobby joins", true);
     modules.registerButton("Disable ticket machine", true);
-    modules.registerButton("Claim Daily Rewards", true);
+    //modules.registerButton("Claim Daily Rewards", true); Needs to be fixed with something that is not in scripts at the moment...
 }
 
 boolean onChat(String msg) {
@@ -114,7 +114,7 @@ void handleReward(String text) {
             }
 
             String claim = "https://rewards.hypixel.net/claim-reward/claim?id=" + appData.get("id").asString() + "&option=" + index + "&activeAd=" + appData.get("activeAd").asString() + "&_csrf=" + token;
-
+            
             Request req2 = new Request("POST", claim);
             req2.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36");
             Response res2 = req2.fetch();
