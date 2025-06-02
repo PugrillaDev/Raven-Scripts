@@ -2,7 +2,7 @@ void onLoad() {
     modules.registerDescription("Lobby Messages");
     modules.registerButton("Disable lobby joins", true);
     modules.registerButton("Disable ticket machine", true);
-    //modules.registerButton("Claim Daily Rewards", true); Needs to be fixed with something that is not in scripts at the moment...
+    modules.registerButton("Claim Daily Rewards", true);
 }
 
 boolean onChat(String msg) {
@@ -66,6 +66,14 @@ void handleReward(String text) {
                 return;
             }
 
+            String csrfCookie = "";
+            for (String[] h : res1.headers()) {
+                if (h[0].equalsIgnoreCase("set-cookie") && h[1].startsWith("_csrf=")) {
+                    csrfCookie = h[1].split(";", 2)[0];
+                    break;
+                }
+            }
+
             Json appData = Json.parse(data);
             List<Json> cards = appData.get("rewards").asArray();
 
@@ -117,6 +125,7 @@ void handleReward(String text) {
             
             Request req2 = new Request("POST", claim);
             req2.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36");
+            if (!csrfCookie.isEmpty()) req2.addHeader("Cookie", csrfCookie);
             Response res2 = req2.fetch();
             long finished = client.time();
 
