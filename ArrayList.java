@@ -1,6 +1,7 @@
 /* 
     custom arraylist, needs some more work on it but cba. make pull requests if you added anything and i'll check it out
     loadstring: load - "https://raw.githubusercontent.com/PugrillaDev/Raven-Scripts/refs/heads/main/ArrayList.java"
+    i add Watermark, and scaffold block counts.
 */
 List<Map<String, Object>> mods = new ArrayList<>();
 Map<String, Map<String, String>> customModuleData = new HashMap<>();
@@ -11,7 +12,7 @@ int animationDuration;
 float moduleHeight;
 int colorMode;
 float waveSpeed;
-int background, direction, animationMode, outlineMode, color;
+int theme, background, direction, animationMode, outlineMode, color;
 float gap = 1, lineGap, textScale;
 float xOffset, yOffset;
 boolean firstTime = false;
@@ -19,18 +20,25 @@ int resetTicks = 0;
 boolean lowercase;
 
 void onLoad() {
-    setDataSlider("AutoClicker", "AutoClicker", "%v1-%v2", new String[]{"Min CPS", "Max CPS"});
+    modules.registerButton("ArrayList", true);
+    modules.registerButton("Watermark", true);
     setDataArray("KillAura", "", "Targets", new String[]{"Single", "Single", "Switch"});
-    setDataSlider("AntiKnockback", "Velocity", "%v1% %v2%", new String[]{"Horizontal", "Vertical"});
-    setDataSlider("Velocity", "", "%v1% %v2%", new String[]{"Horizontal", "Vertical"});
     setDataSlider("FastMine", "", "%v1x", new String[]{"Break speed"});
-    setDataArray("NoSlow", "", "Mode", new String[]{"Vanilla", "Float", "Interact", "Invalid", "Jump", "Sneak"});
-    setDataArray("NoFall", "", "Mode", new String[]{"Spoof", "Single", "Extra", "NoGround A", "NoGround B", "Precision", "Position"});
+    setDataStatic("NoSlow", "", "Watchdog");
+    setDataStatic("Disabler", "", "Motion");
+    setDataArray("NoFall", "", "Mode", new String[]{"Spoof", "NoGround", "Packet A", "Packet B", "CTW Packet", "Prediction", "Blink"});
+    setDataArray("FastFall", "", "Mode", new String[]{"Accelerate", "Timer"});
+    setDataArray("Long Jump", "", "Mode", new String[]{"Float", "Boost"});
     setDataArray("BedAura", "", "Break mode", new String[]{"Legit", "Instant", "Swap"});
+    setDataArray("Bhop", "", "Mode", new String[]{"Strafe", "Ground", "9 Tick", "8 Tick", "7 Tick"});
+    setDataArray("Criticals", "", "Mode", new String[]{"Packet", "Offset"});
+    setDataArray("AntiVoid", "", "Mode", new String[]{"Blink", "Motion"});
+    setDataArray("AimAssist", "", "Mode", new String[]{"Normal", "Silent"});
     setDataSlider("LagRange", "", "%v1ms", new String[]{"Latency"});
-    setDataArray("HitSelect", "", "Mode", new String[]{"Last", "Criticals"});
+    setDataSlider("WTap", "", "%v1ms", new String[]{"Delay"});
 
     // Color settings
+    modules.registerSlider("Theme", "", 0, new String[]{util.colorSymbol + "cDisabled", util.colorSymbol + "cCherry", util.colorSymbol + "dCotton candy", util.colorSymbol + "6Flare", util.colorSymbol + "dFlower", util.colorSymbol + "eGold", util.colorSymbol + "7Grayscale", util.colorSymbol + "9Royal", util.colorSymbol + "bSky", util.colorSymbol + "aVine"});
     modules.registerSlider("Color 1 - Red", "", 255, 0, 255, 1);
     modules.registerSlider("Color 1 - Green", "", 0, 0, 255, 1);
     modules.registerSlider("Color 1 - Blue", "", 0, 0, 255, 1);
@@ -39,15 +47,15 @@ void onLoad() {
     modules.registerSlider("Color 2 - Blue", "", 255, 0, 255, 1);
     modules.registerSlider("Background Opacity", "", 0, 0, 255, 1);
 
-    modules.registerSlider("Mode", "", 0, new String[]{"Static", util.color("&cR&6a&ei&an&bb&do&5w"), util.color("&4G&cr&5a&bd&3i&9e&1n&1t")});
-    modules.registerSlider("Direction", "", 1, new String[]{"Up", "Down"});
+    modules.registerSlider("Mode", "Mode", 0, new String[]{"Static", util.color("&cR&6a&ei&an&bb&do&5w"), util.color("&4G&cr&5a&bd&3i&9e&1n&1t")});
+    modules.registerSlider("Direction", "Direction", 1, new String[]{"Up", "Down"});
     modules.registerSlider("Wave Speed", "s", 5, 0.1, 10, 0.1);
 
     modules.registerSlider("Animations", "", 0, new String[]{"Scale Right", "Scale Center"});
     modules.registerSlider("Animation Speed", "ms", 250, 0, 2000, 10);
 
     modules.registerButton("Lowercase", false);
-    modules.registerSlider("Scale", "", 1, 0.5, 2, 0.1);
+    modules.registerSlider("Scale", "", 1, 0.5, 2, 0.01);
     modules.registerSlider("X-Offset", "", 1, 0, 50, 1);
     modules.registerSlider("Y-Offset", "", 1, 0, 50, 1);
 
@@ -137,49 +145,168 @@ void updateCustomData(Map<String, Object> customData) {
 }
 
 void onEnable() {
-    mods.clear();
+    setNormal = setReverse = setFS = setSC = setFB = false;
     resetTicks = 0;
-    Map<String, List<String>> categories = modules.getCategories();
-    for (String category : categories.keySet()) {
-        if (category.equalsIgnoreCase("profiles")) continue;
-        List<String> modulesList = categories.get(category);
-        for (String module : modulesList) {
-            Map<String, Object> modData = new HashMap<>();
-            modData.put("name", module);
-            modData.put("visibility", false);
-            modData.put("offset", 0);
-            modData.put("scale", 0);
-            modData.put("animating", false);
-            modData.put("animatingUp", false);
-            modData.put("animationStart", 0L);
-            modData.put("animationProgress", 0);
-            mods.add(modData);
+    if (!firstTime) {
+        Map<String, List<String>> categories = modules.getCategories();
+        for (String category : categories.keySet()) {
+            if (category.equalsIgnoreCase("profiles") || category.equalsIgnoreCase("fun")) continue;
+
+            List<String> modulesList = categories.get(category);
+            for (String module : modulesList) {
+                Map<String, Object> modData = new HashMap<>();
+                modData.put("name", module);
+                modData.put("visibility", false);
+                modData.put("offset", 0);
+                modData.put("scale", 0);
+                modData.put("animating", false);
+                modData.put("animatingUp", false);
+                modData.put("animationStart", 0L);
+                modData.put("animationProgress", 0);
+                mods.add(modData);
+            }
         }
+        sortModules();
+        firstTime = true;
     }
 
     updateButtonStates();
     updateSliders();
-    updateEnabledModules();
     sortModules();
 }
 
 void onPreUpdate() {
     resetTicks++;
+    int ticks = client.getPlayer().getTicksExisted();
     updateEnabledModules();
     lineGap = (float) modules.getSlider(scriptName, "Line Gap");
     moduleHeight = (float) render.getFontHeight() + gap;
     xOffset = (float) modules.getSlider(scriptName, "X-Offset");
     yOffset = (float) modules.getSlider(scriptName, "Y-Offset");
 
-    if (resetTicks == 1 || resetTicks % 5 == 0) {
+    
+    /*manualString = modules.getButton("Long Jump", "Manual") ? "Manual" : "Auto";
+    modeString = modules.getSlider("Long Jump", "Mode") == 0 ? "Floyd" : "Boost";
+    if (!setFB || manualString != lastManualString || modeString != lastModeString) {
+        setDataStatic("Long Jump", "", (manualString + " " + modeString));
+        setFB = true;
+        lastManualString = manualString;
+        lastModeString = modeString;
+    }*/
+
+    handleFastScaffoldArray();
+
+    handleVelocityArray();
+
+    handleSafewalkArray();
+
+
+    if (ticks % 5 == 0) {
         updateSliders();
+    }
+    
+}
+boolean fs() {
+    if (modules.getSlider("Scaffold", "Fast scaffold") == 0) {
+        return false;
+    }
+    if (modules.getButton("Scaffold", "Prioritize sprint with speed") && speedLvl() > 0 && (!modules.getButton("Scaffold", "Fast on RMB") || !keybinds.isMouseDown(1) && !modules.isEnabled("Bhop"))) {
+        return false;
+    }
+
+    if (!modules.getButton("Scaffold", "Fast on RMB")) {
+        return true;
+    }
+    if (modules.getButton("Scaffold", "Fast on RMB") && (keybinds.isMouseDown(1) || modules.isEnabled("Bhop") || modules.getButton("Scaffold", "Prioritize sprint with speed") && speedLvl() == 0)) {
+        return true;
+    }
+
+    return false;
+}
+
+int speedLvl() {
+    for (Object[] effect : client.getPlayer().getPotionEffects()) {
+        String name = (String) effect[1];
+        int amplifier = (int) effect[2];
+        if (name.equals("potion.moveSpeed")) {
+            return amplifier + 1;
+        }
+        return 0;
+    }
+    return 0;
+}
+
+void handleFastScaffoldArray() {
+    if (fs()) {
+        if (!setFS) {
+            setDataArray("Scaffold", "", "Fast scaffold", new String[]{"", "Jump A", "Jump B", "Jump B Low", "Jump E", "Keep-Y", "Keep-Y"});
+            setFS = true;
+            setSC = false;
+            updateSliders();
+        }
+        return;
+    }
+    else if (!setSC) {
+        setDataArray("Scaffold", "", "Sprint mode", new String[]{"", "Vanilla", "Float"});
+        setSC = true;
+        setFS = false;
+        updateSliders();
+    }
+}
+
+void handleVelocityArray() {
+    if (!setJR && modules.getSlider("Velocity", "Mode") == 3) {
+        setDataStatic("Velocity", "", "Jump Reset");
+        setJR = true;
+        setNormal = false;
+        setReverse = false;
+        updateSliders();
+        return;
+    }
+    if (!setNormal && modules.getSlider("Velocity", "Mode") < 2) {
+        setDataSlider("Velocity", "", "%v1% %v2%", new String[]{"Horizontal", "Vertical"});
+        setNormal = true;
+        setReverse = false;
+        setJR = false;
+        updateSliders();
+        return;
+    }
+    if (!setReverse && modules.getSlider("Velocity", "Mode") == 2) {
+        setDataSlider("Velocity", "", "-%v1%", new String[]{"-Horizontal", "Vertical"});
+        setReverse = true;
+        setNormal = false;
+        setJR = false;
+        updateSliders();
+    }
+}
+
+void handleSafewalkArray() {
+    if (modules.getButton("Safewalk", "Legit")) {
+        if (!setLS) {
+            setDataSlider("Safewalk", "", "%v1ms", new String[]{"Unsneak delay"});
+            setLS = true;
+            setBS = false;
+        }
+        return;
+    }
+    else {
+        if (!setBS) {
+            setDataStatic("Safewalk", "", "");
+            setBS = true;
+            setLS = false;
+        }
     }
 }
 
 long color1Edit = 0;
 long color2Edit = 0;
+int color1Red, color1Green, color1Blue, color2Red, color2Green, color2Blue;
+
+String manualString, modeString, lastManualString, lastModeString;
+boolean setNormal, setReverse, setJR, setFS, setSC, setFB, setLS, setBS;
 
 void updateSliders() {
+    theme = (int) modules.getSlider(scriptName, "Theme");
     lowercase = modules.getButton(scriptName, "Lowercase");
     colorMode = (int) modules.getSlider(scriptName, "Mode");
     waveSpeed = (float) modules.getSlider(scriptName, "Wave Speed");
@@ -190,12 +317,53 @@ void updateSliders() {
     background = new Color(0, 0, 0, (int) Math.floor(modules.getSlider(scriptName, "Background Opacity"))).getRGB();
     outlineMode = (int) modules.getSlider(scriptName, "Outline Mode");
 
-    int color1Red = (int) modules.getSlider(scriptName, "Color 1 - Red");
-    int color1Green = (int) modules.getSlider(scriptName, "Color 1 - Green");
-    int color1Blue = (int) modules.getSlider(scriptName, "Color 1 - Blue");
-    int color2Red = (int) modules.getSlider(scriptName, "Color 2 - Red");
-    int color2Green = (int) modules.getSlider(scriptName, "Color 2 - Green");
-    int color2Blue = (int) modules.getSlider(scriptName, "Color 2 - Blue");
+    if (theme == 0) {
+        color1Red = (int) modules.getSlider(scriptName, "Color 1 - Red");
+        color1Green = (int) modules.getSlider(scriptName, "Color 1 - Green");
+        color1Blue = (int) modules.getSlider(scriptName, "Color 1 - Blue");
+        color2Red = (int) modules.getSlider(scriptName, "Color 2 - Red");
+        color2Green = (int) modules.getSlider(scriptName, "Color 2 - Green");
+        color2Blue = (int) modules.getSlider(scriptName, "Color 2 - Blue");
+    } else {
+        switch (theme) {
+            case 1:
+                color1Red = 255; color1Green = 200; color1Blue = 200;
+                color2Red = 243; color2Green = 58; color2Blue = 106;
+                break;
+            case 2:
+                color1Red = 99; color1Green = 249; color1Blue = 255;
+                color2Red = 255; color2Green = 104; color2Blue = 204;
+                break;
+            case 3:
+                color1Red = 231; color1Green = 39; color1Blue = 24;
+                color2Red = 245; color2Green = 173; color2Blue = 49;
+                break;
+            case 4:
+                color1Red = 215; color1Green = 166; color1Blue = 231;
+                color2Red = 211; color2Green = 90; color2Blue = 232;
+                break;
+            case 5:
+                color1Red = 255; color1Green = 215; color1Blue = 0;
+                color2Red = 240; color2Green = 159; color2Blue = 0;
+                break;
+            case 6:
+                color1Red = 240; color1Green = 240; color1Blue = 240;
+                color2Red = 110; color2Green = 110; color2Blue = 110;
+                break;
+            case 7:
+                color1Red = 125; color1Green = 204; color1Blue = 241;
+                color2Red = 30; color2Green = 71; color2Blue = 170;
+                break;
+            case 8:
+                color1Red = 160; color1Green = 230; color1Blue = 225;
+                color2Red = 15; color2Green = 190; color2Blue = 220;
+                break;
+            case 9:
+                color1Red = 17; color1Green = 192; color1Blue = 45;
+                color2Red = 201; color2Green = 234; color2Blue = 198;
+                break;
+        }
+    }
 
     if (staticColor == null || color1Red != staticColor.getRed() || color1Green != staticColor.getGreen() || color1Blue != staticColor.getBlue()) {
         if (staticColor != null) color1Edit = client.time() + 5000;
@@ -298,8 +466,43 @@ void onRenderTick(float partialTicks) {
             default:
                 color = 0xFFFFFF;
         }
+        
+            boolean singleplayer = client.isSinglePlayer();
+            String serverIP = client.getServerIP();
+            Entity player = client.getPlayer();
+            NetworkPlayer networkPlayer = player.getNetworkPlayer();
+            String name = player.getName();
+            String watermarkText = "RavenClient | " + name + " | " + serverIP;
+            ItemStack heldItem = player.getHeldItem();
+            boolean isScafoldding = modules.isEnabled("Scaffold") && heldItem != null && heldItem.isBlock && heldItem.stackSize >= 0;
 
-        render.text2d(lowercase ? textToDisplay.toLowerCase() : textToDisplay, finalXPosition, y1 + scale, scale, color, true);
+        if (client.getScreen().equals("GuiChatOF") || client.getScreen().equals("GuiChat")) return;
+
+        if (modules.getButton(scriptName, "ArrayList")){
+           render.text2d(lowercase ? textToDisplay.toLowerCase() : textToDisplay, finalXPosition, y1 + scale, scale, color, true);
+        }
+
+         if (modules.getButton(scriptName, "Watermark")) {
+                render.rect(1, 1, isScafoldding ? (render.getFontWidth("64 blocks") + 70) : (render.getFontWidth(watermarkText) + 10),
+                    isScafoldding ? 40 : 20, 0x60000000);
+                render.line2D(1, isScafoldding ? 40 : 20, isScafoldding ? (render.getFontWidth("64 blocks") + 70) : (render.getFontWidth(watermarkText) + 10), 
+                    isScafoldding ? 40 : 20, 5, color);
+            if(isScafoldding) {
+                    if (heldItem == null || !heldItem.isBlock) return;
+                    String blockText2 = "\u00A7l" + heldItem.stackSize + " blocks";
+                render.text2d(blockText2, 25, 8, 1, -1, true);
+                render.item(heldItem, 5, 5, 1f);
+                render.text2d(Math.round(player.getBPS() * 100) / 100.0 + " b/s", 70, 28, 1f, -1, true);
+                        if (heldItem.stackSize > 0 && heldItem.maxStackSize > 0) {
+            float fillWidth = (60 * heldItem.stackSize) / 64;
+            render.roundedRect(5, 30, 5 + fillWidth, 30 + 3, 1.5f, 0xff00ff00);
+        }
+            }else{
+                render.text2d(watermarkText, 5, 5, 1, -1, true);
+            }
+            
+        }
+
 
         if (outlineMode == 2) {
             // Fix the line position and only animate the height
