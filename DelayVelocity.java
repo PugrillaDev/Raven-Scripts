@@ -37,11 +37,6 @@ void onPostMotion() {
 
     if (packets.isEmpty()) return;
 
-    if (client.getPlayer().onGround()) {
-        flushAll();
-        return;
-    }
-
     long now = client.time();
     long delay = (long) modules.getSlider(scriptName, "Delay");
 
@@ -54,7 +49,7 @@ void onPostMotion() {
         }
     }
 
-    if (!containsVelocity() || !conditionals) {
+    if (!conditionals || !containsVelocity() || client.getPlayer().onGround() || client.isFlying()) {
         flushAll();
     }
 }
