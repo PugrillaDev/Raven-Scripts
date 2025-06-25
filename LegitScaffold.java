@@ -1,3 +1,10 @@
+/*
+This legit scaffold is better than others because it uses a player simulator before Minecraft handles your movement
+so it knows if you're about to walk past the edge offset before you move. That means with max vanilla offset (0.3) you
+won't crouch unless you're actually going to fall. Most other legit scaffolds like Vape or Myau just check if there is air 
+under you after you have already moved, which is slower and less reliable.
+*/
+
 double HW = 0.3;
 double[][] CORNERS = {{ -HW, -HW }, { HW, -HW }, { -HW, HW }, { HW, HW }};
 boolean sneakingFromScript;
