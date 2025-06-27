@@ -20,7 +20,7 @@ void onDisable() {
 boolean onPacketReceived(SPacket packet) {
     if (packet instanceof S12) {
         S12 s12 = (S12) packet;
-        if (s12.entityId == client.getPlayer().entityId && !client.getPlayer().onGround() && conditionals) {
+        if (s12.entityId == client.getPlayer().entityId && conditionals) {
             delaying = true;
         }
     }
@@ -28,7 +28,9 @@ boolean onPacketReceived(SPacket packet) {
     Map<String, Object> entry = new HashMap<>();
     entry.put("packet", packet);
     entry.put("time", client.time());
-    packets.add(entry);
+    synchronized (packets) {
+        packets.add(entry);
+    }
     return false;
 }
 
@@ -49,7 +51,7 @@ void onPostMotion() {
         }
     }
 
-    if (!conditionals || !containsVelocity() || client.getPlayer().onGround() || client.isFlying()) {
+    if (!conditionals || !containsVelocity()) {
         flushAll();
     }
 }
@@ -69,6 +71,9 @@ boolean conditionals() {
     if (modules.getButton(scriptName, "Holding weapon") && !holdingWeapon()) return false;
     if (modules.getButton(scriptName, "Mouse down") && !keybinds.isMouseDown(0)) return false;
     if (modules.getButton(scriptName, "Looking at player") && !aiming) return false;
+    if (client.getPlayer().isCollidedHorizontally()) return false;
+    if (client.getPlayer().onGround()) return false;
+    if (client.isFlying()) return false;
     return true;
 }
 
@@ -80,8 +85,10 @@ boolean holdingWeapon() {
 }
 
 void flushOne() {
-    Map<String, Object> entry = packets.remove(0);
-    client.processPacketNoEvent((SPacket) entry.get("packet"));
+    synchronized (packets) {
+        Map<String, Object> entry = packets.remove(0);
+        client.processPacketNoEvent((SPacket) entry.get("packet"));
+    }
 }
 
 void flushAll() {
