@@ -1102,5 +1102,187 @@
             "y": 0,
             "z": -1
         }
+    ],
+    "EndWoodLongCorners": [
+        {
+            "block": "end_stone",
+            "x": 0,
+            "y": 0,
+            "z": 2
+        },
+        {
+            "block": "end_stone",
+            "x": -1,
+            "y": 0,
+            "z": -1
+        },
+        {
+            "block": "end_stone",
+            "x": -1,
+            "y": 0,
+            "z": 0
+        },
+        {
+            "block": "end_stone",
+            "x": -1,
+            "y": 0,
+            "z": 1
+        },
+        {
+            "block": "end_stone",
+            "x": 0,
+            "y": 0,
+            "z": -2
+        },
+        {
+            "block": "end_stone",
+            "x": 0,
+            "y": 0,
+            "z": -1
+        },
+        {
+            "block": "end_stone",
+            "x": 1,
+            "y": 0,
+            "z": -1
+        },
+        {
+            "block": "end_stone",
+            "x": 1,
+            "y": 0,
+            "z": 0
+        },
+        {
+            "block": "end_stone",
+            "x": 1,
+            "y": 0,
+            "z": 1
+        },
+        {
+            "block": "end_stone",
+            "x": 0,
+            "y": 1,
+            "z": -1
+        },
+        {
+            "block": "end_stone",
+            "x": 0,
+            "y": 1,
+            "z": 0
+        },
+        {
+            "block": "end_stone",
+            "x": 0,
+            "y": 1,
+            "z": 1
+        },
+        {
+            "block": "planks",
+            "x": -2,
+            "y": 0,
+            "z": 0
+        },
+        {
+            "block": "planks",
+            "x": -2,
+            "y": 0,
+            "z": 1
+        },
+        {
+            "block": "planks",
+            "x": -1,
+            "y": 1,
+            "z": -1
+        },
+        {
+            "block": "planks",
+            "x": -1,
+            "y": 1,
+            "z": 0
+        },
+        {
+            "block": "planks",
+            "x": -1,
+            "y": 1,
+            "z": 1
+        },
+        {
+            "block": "planks",
+            "x": 0,
+            "y": 2,
+            "z": 0
+        },
+        {
+            "block": "planks",
+            "x": 0,
+            "y": 2,
+            "z": 1
+        },
+        {
+            "block": "planks",
+            "x": 1,
+            "y": 1,
+            "z": -1
+        },
+        {
+            "block": "planks",
+            "x": 1,
+            "y": 1,
+            "z": 0
+        },
+        {
+            "block": "planks",
+            "x": 1,
+            "y": 1,
+            "z": 1
+        },
+        {
+            "block": "planks",
+            "x": 2,
+            "y": 0,
+            "z": 0
+        },
+        {
+            "block": "planks",
+            "x": 2,
+            "y": 0,
+            "z": 1
+        },
+        {
+            "block": "planks",
+            "x": 1,
+            "y": 0,
+            "z": 2
+        },
+        {
+            "block": "planks",
+            "x": 0,
+            "y": 1,
+            "z": 2
+        },
+        {
+            "block": "planks",
+            "x": 0,
+            "y": 0,
+            "z": 3
+        },
+        {
+            "block": "planks",
+            "x": -1,
+            "y": 0,
+            "z": 2
+        },
+        {
+            "block": "end_stone",
+            "x": -1,
+            "y": 1,
+            "z": 2
+        },
+        {
+            "block": "end_stone",
+            "x": 1,
+            "y": 1,
+            "z": 2
+        }
     ]
 }
