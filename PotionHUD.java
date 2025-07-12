@@ -15,7 +15,7 @@ Map<String, Map<String, Object>> potions = new HashMap<>();
 
 void onLoad() {
     modules.registerSlider("Time Format", "", formatMode, new String[]{ "1m20s", "01:20" });
-    modules.registerSlider("Sort By",   "", sortMode,  new String[]{ "Duration", "Length" });
+    modules.registerSlider("Sort By", "", sortMode, new String[]{ "Duration", "Length" });
     modules.registerSlider("Alignment", "", alignH, new String[]{ "Left", "Center", "Right" });
     modules.registerSlider("Direction", "", alignV, new String[]{ "Descending", "Ascending" });
     modules.registerButton("Exclude Permanent", false);
