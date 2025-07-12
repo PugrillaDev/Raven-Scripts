@@ -1,5 +1,5 @@
 List<Map<String, Object>> packets = new ArrayList<>();
-boolean delaying, aiming, conditionals;
+boolean delaying, aiming, conditionals, teleported;
 
 void onLoad() {
     modules.registerSlider("Delay", "ms", 400, 0, 1000, 50);
@@ -10,7 +10,7 @@ void onLoad() {
 
 void onEnable() {
     packets.clear();
-    delaying = aiming = conditionals = false;
+    delaying = aiming = conditionals = teleported = false;
 }
 
 void onDisable() {
@@ -18,9 +18,11 @@ void onDisable() {
 }
 
 boolean onPacketReceived(SPacket packet) {
-    if (packet instanceof S12) {
+    if (packet instanceof S08) {
+        teleported = true;
+    } else if (packet instanceof S12) {
         S12 s12 = (S12) packet;
-        if (s12.entityId == client.getPlayer().entityId && conditionals) {
+        if (conditionals && s12.entityId == client.getPlayer().entityId) {
             delaying = true;
         }
     }
@@ -36,23 +38,19 @@ boolean onPacketReceived(SPacket packet) {
 
 void onPostMotion() {
     conditionals = conditionals();
-
     if (packets.isEmpty()) return;
+
+    if (teleported || !conditionals || !containsVelocity()) {
+        flushAll();
+    }
 
     long now = client.time();
     long delay = (long) modules.getSlider(scriptName, "Delay");
 
     while (!packets.isEmpty()) {
         long timestamp = (Long) packets.get(0).get("time");
-        if (now - timestamp >= delay) {
-            flushOne();
-        } else {
-            break;
-        }
-    }
-
-    if (!conditionals || !containsVelocity()) {
-        flushAll();
+        if (now - timestamp < delay) break;
+        flushOne();
     }
 }
 
@@ -68,12 +66,13 @@ boolean onPacketSent(CPacket packet) {
 }
 
 boolean conditionals() {
-    if (modules.getButton(scriptName, "Holding weapon") && !holdingWeapon()) return false;
-    if (modules.getButton(scriptName, "Mouse down") && !keybinds.isMouseDown(0)) return false;
-    if (modules.getButton(scriptName, "Looking at player") && !aiming) return false;
-    if (client.getPlayer().isCollidedHorizontally()) return false;
-    if (client.getPlayer().onGround()) return false;
     if (client.isFlying()) return false;
+    Entity player = client.getPlayer();
+    if (player.isCollidedHorizontally()) return false;
+    if (player.onGround()) return false;
+    if (modules.getButton(scriptName, "Looking at player") && !aiming) return false;
+    if (modules.getButton(scriptName, "Mouse down") && !keybinds.isMouseDown(0)) return false;
+    if (modules.getButton(scriptName, "Holding weapon") && !holdingWeapon()) return false;
     return true;
 }
 
