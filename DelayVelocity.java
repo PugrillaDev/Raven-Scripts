@@ -52,6 +52,8 @@ void onPostMotion() {
         if (now - timestamp < delay) break;
         flushOne();
     }
+
+    teleported = false;
 }
 
 boolean onPacketSent(CPacket packet) {
