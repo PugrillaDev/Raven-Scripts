@@ -25,6 +25,10 @@ void onLoad() {
     modules.registerButton("Not moving forward", false);
 }
 
+void onEnable() {
+    unsneakStartTick = sneakJumpStartTick = -1;
+}
+
 void onPrePlayerInput(MovementInput m) {
     boolean manualSneak = isManualSneak();
     boolean requireSneak = modules.getButton(scriptName, "Sneak key pressed");
