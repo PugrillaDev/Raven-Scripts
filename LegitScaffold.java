@@ -10,9 +10,9 @@ double[][] CORNERS = {{ -HW, -HW }, { HW, -HW }, { -HW, HW }, { HW, HW }};
 boolean sneakingFromScript;
 boolean placed;
 boolean forceRelease;
-int sneakJumpDelayTicks;
+int sneakJumpDelayTicks = -1;
 int sneakJumpStartTick = -1;
-int unsneakDelayTicks;
+int unsneakDelayTicks = -1;
 int unsneakStartTick = -1;
 
 void onLoad() {
@@ -25,8 +25,9 @@ void onLoad() {
     modules.registerButton("Not moving forward", false);
 }
 
-void onEnable() {
-    unsneakStartTick = sneakJumpStartTick = -1;
+void onDisable() {
+    sneakingFromScript = false;
+    resetUnsneak();
 }
 
 void onPrePlayerInput(MovementInput m) {
@@ -48,6 +49,8 @@ void onPrePlayerInput(MovementInput m) {
     if (modules.getButton(scriptName, "Not moving forward") && client.getForward() > 0 ||
         modules.getButton(scriptName, "Looking down") && player.getPitch() < 70 ||
         modules.getButton(scriptName, "Holding blocks") && !player.isHoldingBlock()) {
+        sneakingFromScript = false;
+        resetUnsneak();
         if (requireSneak) {
             repressSneak(m);
         }
@@ -159,7 +162,7 @@ void releaseSneak(MovementInput m, boolean resetDelay) {
 }
 
 void resetUnsneak() {
-    unsneakStartTick = sneakJumpStartTick = -1;
+    unsneakStartTick = sneakJumpStartTick = sneakJumpDelayTicks = unsneakDelayTicks = -1;
 }
 
 boolean isManualSneak() {
