@@ -1,13 +1,22 @@
+long lastJoinTs = 0L, lastQuitTs = 0L;
+int joinCount = 0, quitCount = 0;
+
 void onLoad() {
     modules.registerDescription("Lobby Messages");
     modules.registerButton("Disable lobby joins", true);
     modules.registerButton("Disable ticket machine", true);
-    modules.registerButton("Claim Daily Rewards", true);
+    modules.registerButton("Claim daily rewards", true);
+    modules.registerButton("Show party sizes", true);
 }
 
 boolean onChat(String msg) {
     String stripped = util.strip(msg);
     String text = stripped.toLowerCase();
+
+    if (modules.getButton(scriptName, "Show party sizes")) {
+        handleJoinLine(stripped);
+        handleQuitLine(stripped);
+    }
 
     if (modules.getButton(scriptName, "Disable lobby joins") && filterLobbyJoin(stripped)) {
         return false;
@@ -17,11 +26,44 @@ boolean onChat(String msg) {
         return false;
     }
 
-    if (modules.getButton(scriptName, "Claim Daily Rewards")) {
+    if (modules.getButton(scriptName, "Claim daily rewards")) {
         handleReward(text);
     }
 
     return true;
+}
+
+void onPreUpdate() {
+    handleParties();
+}
+
+void handleParties() {
+    long now = System.nanoTime();
+
+    if (joinCount > 0 && now - lastJoinTs >= 10000000) {
+        if (joinCount > 1) client.print("&8[&cQueue&8] &7Party of &c" + joinCount + " &7joined.");
+        joinCount = 0;
+    }
+
+    if (quitCount > 0 && now - lastQuitTs >= 10000000) {
+        if (quitCount > 1) client.print("&8[&cQueue&8] &7Party of &c" + quitCount + " &7quit.");
+        quitCount = 0;
+    }
+}
+
+void handleJoinLine(String l) {
+    int i = l.indexOf(" has joined (");
+    if (i < 0 || l.charAt(l.length() - 2) != ')' || l.charAt(l.length() - 1) != '!') return;
+    if (l.indexOf('/', i + 13) < 0) return;
+    lastJoinTs = System.nanoTime();
+    joinCount++;
+}
+
+void handleQuitLine(String l) {
+    int i = l.indexOf(" has quit!");
+    if (i < 0 || l.charAt(l.length() - 1) != '!') return;
+    lastQuitTs = System.nanoTime();
+    quitCount++;
 }
 
 boolean filterLobbyJoin(String msg) {
