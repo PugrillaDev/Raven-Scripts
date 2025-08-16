@@ -274,9 +274,9 @@ void onRenderTick(float partialTicks) {
         float adjustedY = currentY + (height - adjustedHeight) / 2;
 
         // background
-        render.blur.prepare();
-        render.rect(adjustedX - adjustedScale, adjustedY, adjustedX + adjustedWidth - adjustedScale, adjustedY + adjustedHeight, -1);
-        render.blur.apply(2, 3);
+        // render.blur.prepare();
+        // render.rect(adjustedX - adjustedScale, adjustedY, adjustedX + adjustedWidth - adjustedScale, adjustedY + adjustedHeight, -1);
+        // render.blur.apply(2, 3);
         render.rect(adjustedX, adjustedY, adjustedX + adjustedWidth, adjustedY + adjustedHeight, 0x80000000);
 
         // progress bar
