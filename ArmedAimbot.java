@@ -6,6 +6,7 @@
 int targetColor = new Color(255, 0, 0).getRGB();
 int predictionTicks = 1;
 int aim = 0;
+boolean pendingShoot;
 float serverYaw, serverPitch;
 Entity target = null;
 Vec3 aimPoint = null;
@@ -48,8 +49,8 @@ void onLoad() {
     modules.registerSlider("Prediction", " ticks", 3, 0, 10, 1);
 }
 
-void onPreMotion(PlayerState s) {
-    if (!client.getScreen().isEmpty() || getBedwarsStatus() != 3) return;
+Float[] getRotations() {
+    if (!client.getScreen().isEmpty() || getBedwarsStatus() != 3) return null;
     String targetName = target != null ? target.getName() : "";
     target = null;
     aimPoint = null;
@@ -66,7 +67,7 @@ void onPreMotion(PlayerState s) {
 
     if (!doAiming) {
         aim = 0;
-        return;
+        return null;
     }
 
     List<Entity> closest = getClosestEntities(4);
@@ -99,16 +100,26 @@ void onPreMotion(PlayerState s) {
     float deltaPitch = rotations[1] - serverPitch;
     
     if (target != null) {
-        s.yaw = serverYaw + (Math.abs(deltaYaw) >= 0.1 ? deltaYaw : 0);
-        s.pitch = serverPitch + (Math.abs(deltaPitch) >= 0.1 ? deltaPitch : 0);
 
         if (aim++ > 0 && !sentAlready && durability == maxDurability) {
-            client.sendPacketNoEvent(new C08(heldItem, new Vec3(-1, -1, -1), 255, new Vec3(0.0, 0.0, 0.0)));
+            pendingShoot = true;
         }
+        
+        client.enableMovementFix();
+        return new Float[] { serverYaw + (Math.abs(deltaYaw) >= 0.1 ? deltaYaw : 0), serverPitch + (Math.abs(deltaPitch) >= 0.1 ? deltaPitch : 0) };
     } else if (modules.getButton(scriptName, "Spin Bot")) {
-        s.yaw = (float) util.randomDouble(-180, 180);
-        s.pitch = (float) util.randomDouble(-90, 90);
+        client.enableMovementFix();
+        return new Float[] { (float) util.randomDouble(-180, 180), (float) util.randomDouble(-90, 90) };
     }
+
+    return null;
+}
+
+void onPreUpdate() {
+    if (!pendingShoot) return;
+
+    pendingShoot = false;
+    client.sendPacketNoEvent(new C08(client.getPlayer().getHeldItem(), new Vec3(-1, -1, -1), 255, new Vec3(0.0, 0.0, 0.0)));
 }
 
 boolean onMouse(int button, boolean state) {
