@@ -99,6 +99,9 @@ void handleReward(String text) {
             Request req1 = new Request("GET", rewardLink);
             req1.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36");
             Response res1 = req1.fetch();
+            if (res1 == null) {
+                return;
+            }
             String html = res1.string();
 
             String token = extractBetween(html, "window.securityToken = \"", "\"");
@@ -166,7 +169,7 @@ void handleReward(String text) {
             String claim = "https://rewards.hypixel.net/claim-reward/claim?id=" + appData.get("id").asString() + "&option=" + index + "&activeAd=" + appData.get("activeAd").asString() + "&_csrf=" + token;
             
             Request req2 = new Request("POST", claim);
-            req2.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36");
+            req2.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36");
             if (!csrfCookie.isEmpty()) req2.addHeader("Cookie", csrfCookie);
             Response res2 = req2.fetch();
             long finished = client.time();
@@ -186,6 +189,7 @@ void handleReward(String text) {
                 client.print("&8[&cReward&8] &7Failed to claim reward. Status &c" + status);
             }
         } catch (Exception e) {
+            client.print(Arrays.toString(e.getStackTrace()));
             client.print("&8[&cReward&8] &7Error while claiming reward: &c" + e);
         }
     });
