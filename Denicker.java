@@ -32,7 +32,12 @@ void onWorldJoin(Entity e) {
 }
 
 void parseSkinData(NetworkPlayer nwp, String rawJson) {
-    Json json = Json.parse(rawJson);
+    Json json;
+    try {
+        json = Json.parse(rawJson);
+    } catch (Exception ex) {
+        return;
+    }
 
     if (!json.has("textures")) return;
     Json textures = json.get("textures");
