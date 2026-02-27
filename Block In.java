@@ -62,16 +62,24 @@ void onPrePlayerInteract() {
         return;
     }
 
-    plannedSlot = pickBlockSlot();
-    if (plannedSlot == -1) {
+    int strongSlot = pickBlockSlot(true);
+    int weakSlot = pickBlockSlot(false);
+    if (strongSlot == -1 && weakSlot == -1) {
         disablePlacing();
         return;
     }
 
-    if (!getTarget()) {
+    plannedSlot = (strongSlot != -1 ? strongSlot : weakSlot);
+
+    Object[] tgt = getTarget();
+    if (tgt == null) {
         disablePlacing();
         return;
     }
+
+    boolean adjacent = (Boolean) tgt[0];
+    if (adjacent) plannedSlot = (strongSlot != -1 ? strongSlot : weakSlot);
+    else plannedSlot = (weakSlot != -1 ? weakSlot : strongSlot);
 
     if (!placing) enablePlacing();
 
@@ -229,37 +237,50 @@ void clearAim() {
     targetSide = "";
 }
 
-int pickBlockSlot() {
+int pickBlockSlot(boolean preferStrong) {
     int best = -1;
-    int bestScore = Integer.MAX_VALUE;
+    int bestScore = preferStrong ? Integer.MAX_VALUE : Integer.MIN_VALUE;
 
     for (int slot = 8; slot >= 0; --slot) {
         ItemStack s = inventory.getStackInSlot(slot);
-        if (s == null || s.stackSize == 0 || (s.stackSize == 1 && slot != inventory.getSlot())) continue;
+        if (s == null || s.stackSize == 0) continue;
 
         Integer score = BLOCK_SCORE.get(s.name);
         if (score == null) continue;
 
-        if (score < bestScore) {
+        if (preferStrong ? score < bestScore : score > bestScore) {
             bestScore = score;
             best = slot;
-            if (score == 0) break;
+            if (preferStrong && score == 0) break;
         }
     }
     return best;
 }
 
-boolean getTarget() {
+boolean isDirectAdjacentPlacement(Vec3 p) {
+    Vec3 feet = client.getPlayer().getPosition().floor();
+    int dx = (int)(p.x - feet.x), dy = (int)(p.y - feet.y), dz = (int)(p.z - feet.z);
+    if (dx == 0 && dz == 0 && dy == 2) return true;
+    if ((dy == 0 || dy == 1) && ((Math.abs(dx) == 1 && dz == 0) || (Math.abs(dz) == 1 && dx == 0))) return true;
+    return false;
+}
+
+Object[] getTarget() {
     Object[] res = roofAim();
     if (res == null) res = sidesAim();
-    if (res == null) return false;
+    if (res == null) return null;
 
     Object[] ray = (Object[]) res[0];
-    targetHitPos = (Vec3)  ray[0];
-    targetSide   = (String) ray[2];
-    aimYaw       = (float)  res[1];
-    aimPitch     = (float)  res[2];
-    return true;
+    Vec3 hit = (Vec3) ray[0];
+    String side = (String) ray[2];
+    Vec3 placed = offsetByFace(hit, side).floor();
+    boolean adjacent = isDirectAdjacentPlacement(placed);
+
+    targetHitPos = hit;
+    targetSide = side;
+    aimYaw = (float) res[1];
+    aimPitch = (float) res[2];
+    return new Object[]{ adjacent };
 }
 
 void equipPlannedSlot() {
@@ -420,6 +441,24 @@ boolean canPlaceThrough(String name) {
     return placeThrough.contains(name);
 }
 
+boolean hasAirNeighborExceptPlayer(Vec3 pos, Vec3 feet, Vec3 head) {
+    int px = (int)Math.floor(pos.x), py = (int)Math.floor(pos.y), pz = (int)Math.floor(pos.z);
+    int fx = (int)Math.floor(feet.x), fy = (int)Math.floor(feet.y), fz = (int)Math.floor(feet.z);
+    int hx = (int)Math.floor(head.x), hy = (int)Math.floor(head.y), hz = (int)Math.floor(head.z);
+    int[] ox = { 1, -1, 0, 0, 0, 0 };
+    int[] oy = { 0, 0, 1, -1, 0, 0 };
+    int[] oz = { 0, 0, 0, 0, 1, -1 };
+    for (int i = 0; i < 6; i++) {
+        Vec3 n = new Vec3(px + ox[i], py + oy[i], pz + oz[i]);
+        if (!"air".equals(world.getBlockAt(n).name)) continue;
+        int nx = px + ox[i], ny = py + oy[i], nz = pz + oz[i];
+        boolean isFeet = nx == fx && ny == fy && nz == fz;
+        boolean isHead = nx == hx && ny == hy && nz == hz;
+        if (!isFeet && !isHead) return true;
+    }
+    return false;
+}
+
 double sq(double v) { return v * v; }
 float normYaw(float yaw) { yaw = ((yaw % 360f) + 360f) % 360f; return (yaw > 180f) ? (yaw - 360f) : yaw; }
 float wrapYawDelta(float base, float target) { float d = target - base; while (d <= -180f) d += 360f; while (d > 180f) d -= 360f; return d; }
@@ -450,7 +489,9 @@ Object[] sidesAim() {
 
     ArrayList<Vec3> primaryGoals = new ArrayList<>(baseline.size());
     for (Vec3 pos : baseline) {
-        if (canPlaceThrough(world.getBlockAt(pos).name)) primaryGoals.add(pos);
+        if (!canPlaceThrough(world.getBlockAt(pos).name)) continue;
+        if (!hasAirNeighborExceptPlayer(pos, feet, head)) continue;
+        primaryGoals.add(pos);
     }
     if (primaryGoals.isEmpty()) return null;
 
@@ -465,6 +506,7 @@ Object[] sidesAim() {
         for (int i = 0; i < baseline.size() && picked < 3; i++) {
             Vec3 pos = baseline.get(i);
             if (!canPlaceThrough(world.getBlockAt(pos).name)) continue;
+            if (!hasAirNeighborExceptPlayer(pos, feet, head)) continue;
             Object[] rEnemy = findBestForGoals(Collections.singletonList(pos), reach, eye);
             if (rEnemy != null) return rEnemy;
             picked++;
